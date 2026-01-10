@@ -30,6 +30,7 @@
       <header class="header">
         <div class="logo">
           <span class="logo-text">ghost<span class="logo-accent">budget</span></span>
+          <div id="server-status" class="status-indicator" title="Checking status..."></div>
         </div>
         <button class="btn btn-ghost btn-sm" id="btn-manage-accounts">
           Управление счетами
@@ -88,6 +89,7 @@
 
     <!-- Side Panel: Add Transaction -->
     <aside class="side-panel">
+      <button class="panel-close" id="panel-close">&times;</button>
       <h3 class="panel-title">Новая запись</h3>
 
       <div class="tabs" id="transaction-tabs">
@@ -135,14 +137,11 @@
       <div class="panel-footer">
         <span class="shortcut-hint">Enter — добавить</span>
       </div>
-
-      <!-- Close button for mobile -->
-      <button class="panel-close" id="panel-close">×</button>
     </aside>
-
-    <!-- FAB button for mobile -->
-    <button class="fab-add" id="fab-add">+</button>
   </div>
+
+  <!-- FAB for Mobile -->
+  <button class="fab-add" id="fab-add">+</button>
 
   <!-- Modal: Manage Accounts -->
   <div class="modal-overlay" id="modal-accounts">

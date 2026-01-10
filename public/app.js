@@ -609,6 +609,31 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 });
 
+// ─── Server Status ───
+async function checkServerStatus() {
+  const indicator = $('#server-status');
+  try {
+    // Try to fetch a tiny file or HEAD request with cache bursting
+    const response = await fetch('/manifest.json?t=' + Date.now(), { method: 'HEAD' });
+    if (response.ok) {
+      indicator.classList.remove('offline');
+      indicator.classList.add('online');
+      indicator.title = 'Сервер работает (Online)';
+    } else {
+      throw new Error('Not 200');
+    }
+  } catch (e) {
+    indicator.classList.remove('online');
+    indicator.classList.add('offline');
+    indicator.title = 'Сервер отключен (Offline). Изменения сохраняются только в браузере.';
+  }
+}
+
+// Check status every 5 seconds
+setInterval(checkServerStatus, 5000);
+// Check immediately on load
+checkServerStatus();
+
 // Make functions available globally for inline onclick handlers
 window.deleteTransaction = deleteTransaction;
 window.deleteAccount = deleteAccount;

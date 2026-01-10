@@ -1,10 +1,10 @@
-const CACHE_NAME = 'ghost-budget-v3';
+const CACHE_NAME = 'ghost-budget-v5-autoupdate';
 const ASSETS = [
     '/',
     '/index.html',
     '/style.css',
     '/app.js',
-    '/data/budget.json',
+    // '/data/budget.json', // Dynamic now
     '/manifest.json',
     '/assets/icons/icon-192.png',
     '/assets/icons/icon-512.png'
@@ -32,17 +32,52 @@ self.addEventListener('activate', (event) => {
     self.clients.claim();
 });
 
-// Fetch — serve from cache, fallback to network
+// Fetch Strategies
 self.addEventListener('fetch', (event) => {
-    // Skip data.json caching for fresh data
-    if (event.request.url.includes('budget.json')) {
-        event.respondWith(fetch(event.request));
+    const url = new URL(event.request.url);
+
+    // 1. Data File: Network First (Critical for correctness)
+    if (url.pathname.includes('budget.json')) {
+        event.respondWith(
+            fetch(event.request)
+                .then(res => {
+                    if (res.ok) {
+                        const clone = res.clone();
+                        caches.open(CACHE_NAME).then(c => c.put(event.request, clone));
+                    }
+                    return res;
+                })
+                .catch(() => caches.match(event.request))
+        );
         return;
     }
 
+    // 2. HTML (Navigation): Network First (Critical for updates)
+    // This ensures we always get the new index.html if we are online.
+    if (event.request.mode === 'navigate') {
+        event.respondWith(
+            fetch(event.request)
+                .then(res => {
+                    return res;
+                })
+                .catch(() => {
+                    return caches.match('/index.html') || caches.match('/');
+                })
+        );
+        return;
+    }
+
+    // 3. Static Assets (CSS, JS, Images): Stale-While-Revalidate
+    // Serve cache immediately, but update it in background for next time.
     event.respondWith(
-        caches.match(event.request).then((response) => {
-            return response || fetch(event.request);
+        caches.match(event.request).then(cached => {
+            const networkFetch = fetch(event.request).then(res => {
+                if (res.ok) {
+                    caches.open(CACHE_NAME).then(c => c.put(event.request, res.clone()));
+                }
+                return res;
+            });
+            return cached || networkFetch;
         })
     );
 });
