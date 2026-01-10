@@ -2,36 +2,29 @@
    Ghost Budget — App Logic
    ═══════════════════════════════════════════════════════════ */
 
-// ─── Initial Data ───
-const DEFAULT_DATA = {
-  accounts: [
-    { id: 'kaspi', name: 'Каспи', balance: 70360, type: 'asset' },
-    { id: 'kaspi_pay', name: 'Каспи Пей', balance: 30671, type: 'asset' },
-    { id: 'cash', name: 'Наличные', balance: 7000, type: 'asset' },
-    { id: 'pillow', name: 'Подушка', balance: 25012, type: 'savings' },
-    { id: 'freedom', name: 'Фридом', balance: 0, type: 'asset' },
-    { id: 'ozon', name: 'Озен', balance: 15235, type: 'asset' },
-    { id: 'credit', name: 'Кредитка', balance: 0, type: 'asset' },
-    { id: 'installment', name: 'Рассрочка', balance: -129077, type: 'debt' },
-    { id: 'credit_debt', name: 'Кредит долг', balance: -110000, type: 'debt' },
-  ],
-  transactions: [],
-  categories: {
-    expense: ['Такси', 'Продукты', 'Бизнес', 'Передвижения', 'Комиссия', 'Ozon', 'Покупки', 'Дом', 'Инвестиции', 'Благословение'],
-    income: ['Сдача', 'Сип', 'Таргет', 'Зарплата', 'Бизнес']
-  }
-};
-
 // ─── State ───
-let data = loadData();
+let data = null;
 let currentTransactionType = 'expense';
+let dataLoaded = false;
 
 // ─── DOM Elements ───
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
 
 // ─── Storage ───
-function loadData() {
+async function loadDataFromFile() {
+  try {
+    const response = await fetch('data.json?t=' + Date.now());
+    if (response.ok) {
+      return await response.json();
+    }
+  } catch (e) {
+    console.log('Could not load data.json:', e);
+  }
+  return null;
+}
+
+function loadDataFromLocalStorage() {
   const saved = localStorage.getItem('ghost_budget_data');
   if (saved) {
     try {
@@ -40,10 +33,44 @@ function loadData() {
       console.error('Failed to parse saved data:', e);
     }
   }
-  return JSON.parse(JSON.stringify(DEFAULT_DATA));
+  return null;
+}
+
+async function initData() {
+  // Try to load from file first (for fresh data from repo)
+  const fileData = await loadDataFromFile();
+  const localData = loadDataFromLocalStorage();
+
+  if (fileData && localData) {
+    // Merge: use file accounts/categories, but keep local transactions if newer
+    const fileTime = fileData.lastUpdated || 0;
+    const localTime = localData.lastUpdated || 0;
+
+    if (localTime > fileTime) {
+      // Local is newer, use local but update accounts from file
+      data = localData;
+    } else {
+      // File is newer or same, use file
+      data = fileData;
+      saveData(); // Save to localStorage
+    }
+  } else if (localData) {
+    data = localData;
+  } else if (fileData) {
+    data = fileData;
+    saveData();
+  } else {
+    // No data anywhere, shouldn't happen
+    data = { accounts: [], transactions: [], categories: { expense: [], income: [] } };
+  }
+
+  dataLoaded = true;
+  renderAll();
+  $('#input-amount').focus();
 }
 
 function saveData() {
+  data.lastUpdated = Date.now();
   localStorage.setItem('ghost_budget_data', JSON.stringify(data));
 }
 
@@ -449,10 +476,8 @@ function clearForm() {
 
 // ─── Event Listeners ───
 document.addEventListener('DOMContentLoaded', () => {
-  renderAll();
-
-  // Focus amount input on load
-  $('#input-amount').focus();
+  // Load data from file, then render
+  initData();
 
   // Manage accounts button
   $('#btn-manage-accounts').addEventListener('click', () => {

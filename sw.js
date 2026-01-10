@@ -1,9 +1,10 @@
-const CACHE_NAME = 'ghost-budget-v1';
+const CACHE_NAME = 'ghost-budget-v2';
 const ASSETS = [
     '/',
     '/index.html',
     '/style.css',
     '/app.js',
+    '/data.json',
     '/manifest.json'
 ];
 
