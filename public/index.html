@@ -41,7 +41,16 @@
       <section class="section">
         <div class="section-header">
           <h2 class="section-title">Баланс</h2>
-          <div class="total-balance" id="total-balance">₸0</div>
+          <div class="balance-wrapper">
+            <div class="balance-item">
+              <span class="balance-label">Свои</span>
+              <span class="balance-value" id="own-balance">₸0</span>
+            </div>
+            <div class="balance-item">
+              <span class="balance-label">Лимит</span>
+              <span class="balance-value credit" id="credit-balance">₸0</span>
+            </div>
+          </div>
         </div>
         <div class="accounts-grid" id="accounts-grid">
           <!-- Accounts will be rendered here -->

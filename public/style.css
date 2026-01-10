@@ -209,10 +209,34 @@ body {
   color: var(--text-muted);
 }
 
-.total-balance {
-  font-size: 1.4rem;
+.balance-wrapper {
+  display: flex;
+  gap: var(--spacing-lg);
+  align-items: center;
+}
+
+.balance-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.2;
+}
+
+.balance-label {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+}
+
+.balance-value {
+  font-size: 1.2rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+}
+
+.balance-value.credit {
+  color: var(--text-secondary);
 }
 
 /* ─── Accounts Grid ─── */

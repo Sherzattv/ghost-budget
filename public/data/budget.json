@@ -27,7 +27,7 @@
         {
             "id": "freedom",
             "name": "Фридом",
-            "balance": 0,
+            "balance": 2218,
             "type": "asset"
         },
         {
@@ -38,21 +38,30 @@
         },
         {
             "id": "credit",
-            "name": "Кредитка",
-            "balance": 0,
-            "type": "asset"
+            "name": "Кредитная карта",
+            "balance": 318674,
+            "type": "asset",
+            "limit": 1000000
         },
         {
             "id": "installment",
-            "name": "Рассрочка",
+            "name": "Пианино",
             "balance": -129077,
             "type": "debt"
         },
         {
-            "id": "credit_debt",
-            "name": "Кредит долг",
-            "balance": -110000,
-            "type": "debt"
+            "id": "red_debt",
+            "name": "Kaspi Red",
+            "balance": 400000,
+            "type": "asset",
+            "limit": 400000
+        },
+        {
+            "id": "floco_debt",
+            "name": "!Флоко",
+            "balance": 0,
+            "type": "debt",
+            "isHidden": true
         }
     ],
     "transactions": [
@@ -119,12 +128,12 @@
         {
             "id": "mk81xzqbrrqs3tjbm8j",
             "date": "2026-01-10",
-            "type": "expense",
+            "type": "transfer",
             "amount": 2218,
-            "category": "-- Фридом",
-            "accountId": "kaspi",
             "note": "",
-            "addedAt": 1768034251811
+            "addedAt": 1768034251811,
+            "toAccountId": "freedom",
+            "fromAccountId": "kaspi"
         },
         {
             "id": "mk81xzqbbjw8tgmg0b6",
@@ -259,12 +268,12 @@
         {
             "id": "mk81xzqbbzpngkivtfb",
             "date": "2026-01-10",
-            "type": "expense",
+            "type": "transfer",
             "amount": 29492,
-            "category": "!Ред",
-            "accountId": "kaspi",
             "note": "",
-            "addedAt": 1768034251811
+            "addedAt": 1768034251811,
+            "toAccountId": "red_debt",
+            "fromAccountId": "kaspi"
         },
         {
             "id": "mk81xzqb0nqhkzog2cql",
@@ -349,12 +358,12 @@
         {
             "id": "mk81xzqbvb5bgvxg84m",
             "date": "2026-01-10",
-            "type": "expense",
+            "type": "transfer",
             "amount": 52000,
-            "category": "!Флоко",
-            "accountId": "kaspi",
             "note": "",
-            "addedAt": 1768034251811
+            "addedAt": 1768034251811,
+            "toAccountId": "floco_debt",
+            "fromAccountId": "kaspi"
         },
         {
             "id": "mk81xzqbodympox4aqh",
@@ -495,6 +504,46 @@
             "accountId": "kaspi_pay",
             "note": "",
             "addedAt": 1768034341888
+        },
+        {
+            "id": "cred_exp_1",
+            "date": "2025-12-31",
+            "type": "expense",
+            "amount": 889461,
+            "category": "!Реклама Друзья",
+            "accountId": "credit",
+            "note": "Реклама (Декабрь)",
+            "addedAt": 1768036110260
+        },
+        {
+            "id": "cred_exp_2",
+            "date": "2026-01-08",
+            "type": "expense",
+            "amount": 101299,
+            "category": "!Реклама Друзья",
+            "accountId": "credit",
+            "note": "Реклама (Январь)",
+            "addedAt": 1768036110260
+        },
+        {
+            "id": "cred_inc_1",
+            "date": "2026-01-08",
+            "type": "income",
+            "amount": 400000,
+            "category": "Возврат Друзья",
+            "accountId": "credit",
+            "note": "Частичный возврат",
+            "addedAt": 1768036110260
+        },
+        {
+            "id": "cred_inc_2",
+            "date": "2026-01-08",
+            "type": "income",
+            "amount": 13500,
+            "category": "Возврат Друзья",
+            "accountId": "credit",
+            "note": "Частичный возврат",
+            "addedAt": 1768036110260
         }
     ],
     "categories": {
@@ -526,5 +575,5 @@
             "Сдача с janapost"
         ]
     },
-    "lastUpdated": 1768034388341
+    "lastUpdated": 1768036540648
 }

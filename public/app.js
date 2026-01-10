@@ -109,23 +109,43 @@ function renderAccounts() {
   const grid = $('#accounts-grid');
   const assets = data.accounts.filter(a => a.type !== 'debt');
 
-  grid.innerHTML = assets.map(account => `
+  grid.innerHTML = assets.map(account => {
+    let subline = '';
+    let mainClass = account.balance >= 0 ? 'positive' : 'negative';
+
+    // Credit Limit Logic
+    if (account.limit) {
+      const debt = account.limit - account.balance;
+      if (debt > 0) {
+        subline = `<div style="font-size: 0.75rem; color: var(--expense); margin-top: 4px;">Долг: ${formatMoney(debt)}</div>`;
+      } else {
+        subline = `<div style="font-size: 0.75rem; color: var(--income); margin-top: 4px;">Погашено</div>`;
+      }
+    }
+
+    return `
     <div class="account-card ${account.balance < 0 ? 'debt' : ''}">
       <div class="account-name">${account.name}</div>
-      <div class="account-balance ${account.balance >= 0 ? 'positive' : 'negative'}">
+      <div class="account-balance ${mainClass}">
         ${formatMoney(account.balance)}
       </div>
+      ${subline}
     </div>
-  `).join('');
+  `}).join('');
 
   // Calculate and display total balance
-  const totalBalance = assets.reduce((sum, a) => sum + a.balance, 0);
-  $('#total-balance').textContent = formatMoney(totalBalance);
+  // Calculate and display balances
+  const ownBalance = assets.filter(a => !a.limit).reduce((sum, a) => sum + a.balance, 0);
+  const creditBalance = assets.filter(a => a.limit).reduce((sum, a) => sum + a.balance, 0);
+
+  $('#own-balance').textContent = formatMoney(ownBalance);
+  $('#credit-balance').textContent = formatMoney(creditBalance);
 }
 
 function renderDebts() {
   const row = $('#debts-row');
-  const debts = data.accounts.filter(a => a.type === 'debt');
+  // Hide debts with 0 balance (paid off)
+  const debts = data.accounts.filter(a => a.type === 'debt' && Math.abs(a.balance) > 0);
 
   if (debts.length === 0) {
     $('#debts-section').style.display = 'none';
@@ -167,8 +187,7 @@ function renderAnalytics() {
   });
 
   const sortedCategories = Object.entries(categoryTotals)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 8);
+    .sort((a, b) => b[1] - a[1]);
 
   if (sortedCategories.length === 0) {
     container.innerHTML = '<div class="analytics-empty">Нет расходов за этот период</div>';
