@@ -1,0 +1,556 @@
+/* ═══════════════════════════════════════════════════════════
+   Ghost Budget — App Logic
+   ═══════════════════════════════════════════════════════════ */
+
+// ─── Initial Data ───
+const DEFAULT_DATA = {
+  accounts: [
+    { id: 'kaspi', name: 'Каспи', balance: 70360, type: 'asset' },
+    { id: 'kaspi_pay', name: 'Каспи Пей', balance: 30671, type: 'asset' },
+    { id: 'cash', name: 'Наличные', balance: 7000, type: 'asset' },
+    { id: 'pillow', name: 'Подушка', balance: 25012, type: 'savings' },
+    { id: 'freedom', name: 'Фридом', balance: 0, type: 'asset' },
+    { id: 'ozon', name: 'Озен', balance: 15235, type: 'asset' },
+    { id: 'credit', name: 'Кредитка', balance: 0, type: 'asset' },
+    { id: 'installment', name: 'Рассрочка', balance: -129077, type: 'debt' },
+    { id: 'credit_debt', name: 'Кредит долг', balance: -110000, type: 'debt' },
+  ],
+  transactions: [],
+  categories: {
+    expense: ['Такси', 'Продукты', 'Бизнес', 'Передвижения', 'Комиссия', 'Ozon', 'Покупки', 'Дом', 'Инвестиции', 'Благословение'],
+    income: ['Сдача', 'Сип', 'Таргет', 'Зарплата', 'Бизнес']
+  }
+};
+
+// ─── State ───
+let data = loadData();
+let currentTransactionType = 'expense';
+
+// ─── DOM Elements ───
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => document.querySelectorAll(sel);
+
+// ─── Storage ───
+function loadData() {
+  const saved = localStorage.getItem('ghost_budget_data');
+  if (saved) {
+    try {
+      return JSON.parse(saved);
+    } catch (e) {
+      console.error('Failed to parse saved data:', e);
+    }
+  }
+  return JSON.parse(JSON.stringify(DEFAULT_DATA));
+}
+
+function saveData() {
+  localStorage.setItem('ghost_budget_data', JSON.stringify(data));
+}
+
+// ─── Utilities ───
+function generateId() {
+  return Date.now().toString(36) + Math.random().toString(36).substr(2);
+}
+
+function formatMoney(amount, showSign = false) {
+  const absAmount = Math.abs(amount);
+  let formatted;
+
+  if (absAmount >= 1000000) {
+    formatted = (absAmount / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+  } else if (absAmount >= 1000) {
+    formatted = absAmount.toLocaleString('ru-RU');
+  } else {
+    formatted = absAmount.toString();
+  }
+
+  const sign = amount < 0 ? '-' : (showSign && amount > 0 ? '+' : '');
+  return `${sign}₸${formatted}`;
+}
+
+function formatDate(dateStr) {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
+}
+
+function getAccountById(id) {
+  return data.accounts.find(a => a.id === id);
+}
+
+// ─── Render Functions ───
+function renderAccounts() {
+  const grid = $('#accounts-grid');
+  const assets = data.accounts.filter(a => a.type !== 'debt');
+
+  grid.innerHTML = assets.map(account => `
+    <div class="account-card ${account.balance < 0 ? 'debt' : ''}">
+      <div class="account-name">${account.name}</div>
+      <div class="account-balance ${account.balance >= 0 ? 'positive' : 'negative'}">
+        ${formatMoney(account.balance)}
+      </div>
+    </div>
+  `).join('');
+
+  // Calculate and display total balance
+  const totalBalance = assets.reduce((sum, a) => sum + a.balance, 0);
+  $('#total-balance').textContent = formatMoney(totalBalance);
+}
+
+function renderDebts() {
+  const row = $('#debts-row');
+  const debts = data.accounts.filter(a => a.type === 'debt');
+
+  if (debts.length === 0) {
+    $('#debts-section').style.display = 'none';
+    return;
+  }
+
+  $('#debts-section').style.display = 'block';
+  row.innerHTML = debts.map(debt => `
+    <div class="debt-item">
+      <span class="debt-name">${debt.name}:</span>
+      <span class="debt-amount">${formatMoney(Math.abs(debt.balance))}</span>
+    </div>
+  `).join('');
+}
+
+function renderAnalytics() {
+  const container = $('#analytics');
+  const period = $('#period-select').value;
+
+  // Filter transactions by period
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const startOfWeek = new Date(now);
+  startOfWeek.setDate(now.getDate() - now.getDay());
+
+  let filteredTransactions = data.transactions.filter(t => t.type === 'expense');
+
+  if (period === 'month') {
+    filteredTransactions = filteredTransactions.filter(t => new Date(t.date) >= startOfMonth);
+  } else if (period === 'week') {
+    filteredTransactions = filteredTransactions.filter(t => new Date(t.date) >= startOfWeek);
+  }
+
+  // Group by category
+  const categoryTotals = {};
+  filteredTransactions.forEach(t => {
+    const cat = t.category || 'Другое';
+    categoryTotals[cat] = (categoryTotals[cat] || 0) + t.amount;
+  });
+
+  const sortedCategories = Object.entries(categoryTotals)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8);
+
+  if (sortedCategories.length === 0) {
+    container.innerHTML = '<div class="analytics-empty">Нет расходов за этот период</div>';
+    return;
+  }
+
+  const maxAmount = sortedCategories[0][1];
+  const totalExpenses = sortedCategories.reduce((sum, [, amount]) => sum + amount, 0);
+
+  container.innerHTML = sortedCategories.map(([category, amount]) => {
+    const percent = Math.round((amount / totalExpenses) * 100);
+    const barWidth = Math.round((amount / maxAmount) * 100);
+
+    return `
+      <div class="analytics-item">
+        <span class="analytics-category">${category}</span>
+        <div class="analytics-bar-wrapper">
+          <div class="analytics-bar">
+            <div class="analytics-bar-fill" style="width: ${barWidth}%"></div>
+          </div>
+        </div>
+        <span class="analytics-amount">${formatMoney(amount)}</span>
+        <span class="analytics-percent">${percent}%</span>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderTransactions() {
+  const container = $('#transactions');
+  const recent = data.transactions.slice(-50).reverse();
+
+  if (recent.length === 0) {
+    container.innerHTML = '<div class="transactions-empty">Нет записей. Добавь первую через панель справа.</div>';
+    return;
+  }
+
+  container.innerHTML = recent.map(t => {
+    let info, amount, amountClass, accountInfo;
+
+    if (t.type === 'transfer') {
+      const fromAcc = getAccountById(t.fromAccountId);
+      const toAcc = getAccountById(t.toAccountId);
+
+      // Если перевод на долговой счёт — это погашение
+      if (toAcc?.type === 'debt') {
+        info = `${fromAcc?.name || '?'} → ${toAcc?.name || '?'}`;
+        amount = '-' + formatMoney(t.amount);
+        amountClass = 'expense'; // Красный, т.к. деньги уходят
+        accountInfo = 'погашение';
+      } else {
+        info = `${fromAcc?.name || '?'} → ${toAcc?.name || '?'}`;
+        amount = formatMoney(t.amount);
+        amountClass = 'transfer';
+        accountInfo = 'перевод';
+      }
+    } else {
+      const account = getAccountById(t.accountId);
+      info = t.category || 'Без категории';
+      amount = (t.type === 'expense' ? '-' : '+') + formatMoney(t.amount);
+      amountClass = t.type;
+      accountInfo = account?.name || '?';
+    }
+
+    return `
+      <div class="transaction" data-id="${t.id}">
+        <span class="transaction-date">${formatDate(t.date)}</span>
+        <div class="transaction-info">
+          <span class="transaction-category">${info}</span>
+          ${t.note ? `<span class="transaction-note">${t.note}</span>` : ''}
+        </div>
+        <span class="transaction-account">${accountInfo}</span>
+        <span class="transaction-amount ${amountClass}">${amount}</span>
+        <button class="transaction-delete" onclick="deleteTransaction('${t.id}')" title="Удалить">×</button>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderAccountOptions() {
+  const assets = data.accounts.filter(a => a.type !== 'debt');
+  const allAccounts = data.accounts;
+
+  const assetOptions = assets.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+  const allOptions = allAccounts.map(a => {
+    const label = a.type === 'debt' ? `${a.name} (долг)` : a.name;
+    return `<option value="${a.id}">${label}</option>`;
+  }).join('');
+
+  $('#input-account').innerHTML = assetOptions;
+  $('#input-from-account').innerHTML = assetOptions;
+  $('#input-to-account').innerHTML = allOptions; // Включаем долги для погашения
+}
+
+function renderCategoriesList() {
+  const categories = data.categories[currentTransactionType] || [];
+  const datalist = $('#categories-list');
+  datalist.innerHTML = categories.map(c => `<option value="${c}">`).join('');
+}
+
+function renderAccountsList() {
+  const list = $('#accounts-list');
+
+  list.innerHTML = data.accounts.map(account => `
+    <div class="account-list-item">
+      <span class="account-name">${account.name}</span>
+      <span class="account-balance ${account.balance >= 0 ? 'positive' : 'negative'}">
+        ${formatMoney(account.balance)}
+      </span>
+      <button class="btn btn-ghost btn-sm btn-danger" onclick="deleteAccount('${account.id}')" title="Удалить">×</button>
+    </div>
+  `).join('');
+}
+
+function renderAll() {
+  renderAccounts();
+  renderDebts();
+  renderAnalytics();
+  renderTransactions();
+  renderAccountOptions();
+  renderCategoriesList();
+}
+
+// ─── Actions ───
+function addTransaction(type, amount, category, accountId, fromAccountId, toAccountId, note) {
+  const transaction = {
+    id: generateId(),
+    date: new Date().toISOString().split('T')[0],
+    type,
+    amount: Math.abs(amount),
+    note: note || ''
+  };
+
+  if (type === 'transfer') {
+    transaction.fromAccountId = fromAccountId;
+    transaction.toAccountId = toAccountId;
+
+    // Update account balances
+    const fromAccount = getAccountById(fromAccountId);
+    const toAccount = getAccountById(toAccountId);
+    if (fromAccount) fromAccount.balance -= amount;
+    if (toAccount) toAccount.balance += amount;
+  } else {
+    transaction.category = category;
+    transaction.accountId = accountId;
+
+    // Update account balance
+    const account = getAccountById(accountId);
+    if (account) {
+      if (type === 'expense') {
+        account.balance -= amount;
+      } else {
+        account.balance += amount;
+      }
+    }
+
+    // Add new category if doesn't exist
+    if (category && !data.categories[type].includes(category)) {
+      data.categories[type].push(category);
+    }
+  }
+
+  data.transactions.push(transaction);
+  saveData();
+  renderAll();
+}
+
+function deleteTransaction(id) {
+  const index = data.transactions.findIndex(t => t.id === id);
+  if (index === -1) return;
+
+  const t = data.transactions[index];
+
+  // Reverse the balance change
+  if (t.type === 'transfer') {
+    const fromAccount = getAccountById(t.fromAccountId);
+    const toAccount = getAccountById(t.toAccountId);
+    if (fromAccount) fromAccount.balance += t.amount;
+    if (toAccount) toAccount.balance -= t.amount;
+  } else {
+    const account = getAccountById(t.accountId);
+    if (account) {
+      if (t.type === 'expense') {
+        account.balance += t.amount;
+      } else {
+        account.balance -= t.amount;
+      }
+    }
+  }
+
+  data.transactions.splice(index, 1);
+  saveData();
+  renderAll();
+}
+
+function addAccount(name, balance, type) {
+  const id = name.toLowerCase().replace(/\s+/g, '_') + '_' + generateId().slice(0, 4);
+
+  data.accounts.push({
+    id,
+    name,
+    balance: parseFloat(balance) || 0,
+    type
+  });
+
+  saveData();
+  renderAll();
+  renderAccountsList();
+}
+
+function deleteAccount(id) {
+  // Don't allow deleting if there are transactions with this account
+  const hasTransactions = data.transactions.some(t =>
+    t.accountId === id || t.fromAccountId === id || t.toAccountId === id
+  );
+
+  if (hasTransactions) {
+    alert('Нельзя удалить счёт с транзакциями');
+    return;
+  }
+
+  data.accounts = data.accounts.filter(a => a.id !== id);
+  saveData();
+  renderAll();
+  renderAccountsList();
+}
+
+// ─── Export / Import ───
+function exportData() {
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `ghost-budget-${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importData() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+
+  input.onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const imported = JSON.parse(e.target.result);
+        if (imported.accounts && imported.transactions) {
+          data = imported;
+          saveData();
+          renderAll();
+          alert('Данные импортированы');
+        } else {
+          alert('Неверный формат файла');
+        }
+      } catch (err) {
+        alert('Ошибка при чтении файла');
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  input.click();
+}
+
+// ─── Modal Handling ───
+function openModal(modalId) {
+  const modal = $(`#${modalId}`);
+  modal.classList.add('active');
+
+  // Focus first input
+  setTimeout(() => {
+    const firstInput = modal.querySelector('input');
+    if (firstInput) firstInput.focus();
+  }, 100);
+}
+
+function closeModal(modalId) {
+  const modal = $(`#${modalId}`);
+  modal.classList.remove('active');
+}
+
+function updateTransactionForm() {
+  const isTransfer = currentTransactionType === 'transfer';
+
+  $('#group-category').style.display = isTransfer ? 'none' : 'block';
+  $('#group-account').style.display = isTransfer ? 'none' : 'block';
+  $('#group-from-account').style.display = isTransfer ? 'block' : 'none';
+  $('#group-to-account').style.display = isTransfer ? 'block' : 'none';
+
+  renderCategoriesList();
+}
+
+function clearForm() {
+  $('#input-amount').value = '';
+  $('#input-category').value = '';
+  $('#input-note').value = '';
+  $('#input-amount').focus();
+}
+
+// ─── Event Listeners ───
+document.addEventListener('DOMContentLoaded', () => {
+  renderAll();
+
+  // Focus amount input on load
+  $('#input-amount').focus();
+
+  // Manage accounts button
+  $('#btn-manage-accounts').addEventListener('click', () => {
+    renderAccountsList();
+    openModal('modal-accounts');
+  });
+
+  // Close modals
+  $('#modal-accounts-close').addEventListener('click', () => closeModal('modal-accounts'));
+
+  // Close modal on overlay click
+  $$('.modal-overlay').forEach(modal => {
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.classList.remove('active');
+      }
+    });
+  });
+
+  // Transaction type tabs
+  $$('#transaction-tabs .tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      $$('#transaction-tabs .tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      currentTransactionType = tab.dataset.type;
+      updateTransactionForm();
+    });
+  });
+
+  // Transaction form submit
+  $('#transaction-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+
+    const amount = parseFloat($('#input-amount').value);
+    const category = $('#input-category').value.trim();
+    const accountId = $('#input-account').value;
+    const fromAccountId = $('#input-from-account').value;
+    const toAccountId = $('#input-to-account').value;
+    const note = $('#input-note').value.trim();
+
+    if (!amount || amount <= 0) {
+      $('#input-amount').focus();
+      return;
+    }
+
+    if (currentTransactionType === 'transfer') {
+      if (fromAccountId === toAccountId) {
+        alert('Выбери разные счета');
+        return;
+      }
+      addTransaction('transfer', amount, null, null, fromAccountId, toAccountId, note);
+    } else {
+      if (!category) {
+        $('#input-category').focus();
+        return;
+      }
+      addTransaction(currentTransactionType, amount, category, accountId, null, null, note);
+    }
+
+    clearForm();
+  });
+
+  // Add account form
+  $('#add-account-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+
+    const name = $('#new-account-name').value.trim();
+    const balance = $('#new-account-balance').value;
+    const type = $('#new-account-type').value;
+
+    if (!name) {
+      $('#new-account-name').focus();
+      return;
+    }
+
+    addAccount(name, balance, type);
+
+    // Reset form
+    $('#new-account-name').value = '';
+    $('#new-account-balance').value = '0';
+  });
+
+  // Period select
+  $('#period-select').addEventListener('change', renderAnalytics);
+
+  // Export / Import
+  $('#btn-export').addEventListener('click', exportData);
+  $('#btn-import').addEventListener('click', importData);
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', (e) => {
+    // Escape - close modals
+    if (e.key === 'Escape') {
+      $$('.modal-overlay.active').forEach(m => m.classList.remove('active'));
+    }
+  });
+});
+
+// Make functions available globally for inline onclick handlers
+window.deleteTransaction = deleteTransaction;
+window.deleteAccount = deleteAccount;

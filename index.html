@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ghost Budget</title>
+  <meta name="description" content="Минималистичный локальный трекер бюджета">
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1A1A1A">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="icon-192.png">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <div class="app-layout">
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Header -->
+      <header class="header">
+        <div class="logo">
+          <span class="logo-text">ghost<span class="logo-accent">budget</span></span>
+        </div>
+        <button class="btn btn-ghost btn-sm" id="btn-manage-accounts">
+          Управление счетами
+        </button>
+      </header>
+
+      <!-- Balance Section -->
+      <section class="section">
+        <div class="section-header">
+          <h2 class="section-title">Баланс</h2>
+          <div class="total-balance" id="total-balance">₸0</div>
+        </div>
+        <div class="accounts-grid" id="accounts-grid">
+          <!-- Accounts will be rendered here -->
+        </div>
+      </section>
+
+      <!-- Debts Section -->
+      <section class="section section-debts" id="debts-section">
+        <h2 class="section-title">Долги</h2>
+        <div class="debts-row" id="debts-row">
+          <!-- Debts will be rendered here -->
+        </div>
+      </section>
+
+      <!-- Analytics Section -->
+      <section class="section">
+        <div class="section-header">
+          <h2 class="section-title">Куда уходят деньги</h2>
+          <select class="period-select" id="period-select">
+            <option value="month">Этот месяц</option>
+            <option value="week">Эта неделя</option>
+            <option value="all">Всё время</option>
+          </select>
+        </div>
+        <div class="analytics" id="analytics">
+          <!-- Analytics will be rendered here -->
+        </div>
+      </section>
+
+      <!-- Transactions Section -->
+      <section class="section">
+        <h2 class="section-title">Последние операции</h2>
+        <div class="transactions" id="transactions">
+          <!-- Transactions will be rendered here -->
+        </div>
+      </section>
+
+      <!-- Footer -->
+      <footer class="footer">
+        <span>данные хранятся локально</span>
+        <button class="btn btn-ghost btn-sm" id="btn-export">Экспорт</button>
+        <button class="btn btn-ghost btn-sm" id="btn-import">Импорт</button>
+      </footer>
+    </main>
+
+    <!-- Side Panel: Add Transaction -->
+    <aside class="side-panel">
+      <h3 class="panel-title">Новая запись</h3>
+
+      <div class="tabs" id="transaction-tabs">
+        <button class="tab active" data-type="expense">Расход</button>
+        <button class="tab" data-type="income">Доход</button>
+        <button class="tab" data-type="transfer">Перевод</button>
+      </div>
+
+      <form id="transaction-form">
+        <div class="form-group">
+          <label class="form-label">Сумма</label>
+          <input type="number" class="form-input form-input-amount" id="input-amount" placeholder="0" required>
+        </div>
+
+        <div class="form-group" id="group-category">
+          <label class="form-label">Категория</label>
+          <input type="text" class="form-input" id="input-category" list="categories-list"
+            placeholder="Выбери или введи">
+          <datalist id="categories-list"></datalist>
+        </div>
+
+        <div class="form-group" id="group-account">
+          <label class="form-label">Счёт</label>
+          <select class="form-select" id="input-account"></select>
+        </div>
+
+        <div class="form-group" id="group-from-account" style="display: none;">
+          <label class="form-label">Откуда</label>
+          <select class="form-select" id="input-from-account"></select>
+        </div>
+
+        <div class="form-group" id="group-to-account" style="display: none;">
+          <label class="form-label">Куда</label>
+          <select class="form-select" id="input-to-account"></select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Заметка <span class="optional">(опц.)</span></label>
+          <input type="text" class="form-input" id="input-note" placeholder="...">
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-full">Добавить</button>
+      </form>
+
+      <div class="panel-footer">
+        <span class="shortcut-hint">Enter — добавить</span>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Modal: Manage Accounts -->
+  <div class="modal-overlay" id="modal-accounts">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">Управление счетами</h3>
+        <button class="modal-close" id="modal-accounts-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="accounts-list" id="accounts-list">
+          <!-- Accounts list will be rendered here -->
+        </div>
+
+        <div class="divider"></div>
+
+        <form id="add-account-form">
+          <h4 class="form-subtitle">Добавить счёт</h4>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Название</label>
+              <input type="text" class="form-input" id="new-account-name" placeholder="Мой счёт" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Начальный баланс</label>
+              <input type="number" class="form-input" id="new-account-balance" placeholder="0" value="0">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Тип</label>
+              <select class="form-select" id="new-account-type">
+                <option value="asset">Актив</option>
+                <option value="savings">Накопления</option>
+                <option value="debt">Долг</option>
+              </select>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary btn-full">Добавить счёт</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    // Register Service Worker for PWA
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js')
+        .then(() => console.log('SW registered'))
+        .catch(err => console.log('SW error:', err));
+    }
+  </script>
+</body>
+
+</html>
