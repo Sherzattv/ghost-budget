@@ -3,14 +3,14 @@
     "version": "1.0.0",
     "description": "Минималистичный локальный трекер бюджета",
     "scripts": {
-        "start": "npx serve -s . -l $PORT",
-        "dev": "npx serve -s . -l 3000"
+        "start": "npx serve public -l $PORT",
+        "dev": "npx serve public -l 3000"
     },
     "keywords": [
         "budget",
         "finance",
         "pwa"
     ],
-    "author": "",
+    "author": "Sherzat",
     "license": "MIT"
 }

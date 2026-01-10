@@ -1,0 +1,80 @@
+{
+    "accounts": [
+        {
+            "id": "kaspi",
+            "name": "Каспи",
+            "balance": 70360,
+            "type": "asset"
+        },
+        {
+            "id": "kaspi_pay",
+            "name": "Каспи Пей",
+            "balance": 30671,
+            "type": "asset"
+        },
+        {
+            "id": "cash",
+            "name": "Наличные",
+            "balance": 7000,
+            "type": "asset"
+        },
+        {
+            "id": "pillow",
+            "name": "Подушка",
+            "balance": 25012,
+            "type": "savings"
+        },
+        {
+            "id": "freedom",
+            "name": "Фридом",
+            "balance": 0,
+            "type": "asset"
+        },
+        {
+            "id": "ozon",
+            "name": "Озен",
+            "balance": 15235,
+            "type": "asset"
+        },
+        {
+            "id": "credit",
+            "name": "Кредитка",
+            "balance": 0,
+            "type": "asset"
+        },
+        {
+            "id": "installment",
+            "name": "Рассрочка",
+            "balance": -129077,
+            "type": "debt"
+        },
+        {
+            "id": "credit_debt",
+            "name": "Кредит долг",
+            "balance": -110000,
+            "type": "debt"
+        }
+    ],
+    "transactions": [],
+    "categories": {
+        "expense": [
+            "Такси",
+            "Продукты",
+            "Бизнес",
+            "Передвижения",
+            "Комиссия",
+            "Ozon",
+            "Покупки",
+            "Дом",
+            "Инвестиции",
+            "Благословение"
+        ],
+        "income": [
+            "Сдача",
+            "Сип",
+            "Таргет",
+            "Зарплата",
+            "Бизнес"
+        ]
+    }
+}
