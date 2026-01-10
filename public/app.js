@@ -538,6 +538,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     clearForm();
+
+    // Close panel on mobile after adding
+    if (window.innerWidth <= 900) {
+      $('.side-panel').classList.remove('open');
+    }
   });
 
   // Add account form
@@ -569,11 +574,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Keyboard shortcuts
   document.addEventListener('keydown', (e) => {
-    // Escape - close modals
+    // Escape - close modals and side panel
     if (e.key === 'Escape') {
       $$('.modal-overlay.active').forEach(m => m.classList.remove('active'));
+      $('.side-panel').classList.remove('open');
     }
   });
+
+  // Mobile: FAB button opens side panel
+  const fabBtn = $('#fab-add');
+  const sidePanel = $('.side-panel');
+  const panelClose = $('#panel-close');
+
+  if (fabBtn) {
+    fabBtn.addEventListener('click', () => {
+      sidePanel.classList.add('open');
+      setTimeout(() => $('#input-amount').focus(), 300);
+    });
+  }
+
+  if (panelClose) {
+    panelClose.addEventListener('click', () => {
+      sidePanel.classList.remove('open');
+    });
+  }
+
+  // Close panel after adding transaction on mobile
+  const originalClearForm = clearForm;
+  window.clearFormMobile = function () {
+    originalClearForm();
+    if (window.innerWidth <= 900) {
+      sidePanel.classList.remove('open');
+    }
+  };
 });
 
 // Make functions available globally for inline onclick handlers
