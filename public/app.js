@@ -105,19 +105,44 @@ function getAccountById(id) {
 }
 
 // ─── Render Functions ───
+// Helper to split Credit Card debt
+function calculateCreditBreakdown(account) {
+  if (!account.limit) return null;
+  const debt = account.limit - account.balance;
+  if (debt <= 0) return { total: 0, my: 0, friends: 0 };
+
+  if (account.id === 'credit') {
+    const friendsExpenses = data.transactions
+      .filter(t => t.accountId === account.id && t.type === 'expense' && t.category === '!Реклама Друзья')
+      .reduce((sum, t) => sum + t.amount, 0);
+
+    const friendsReturns = data.transactions
+      .filter(t => t.accountId === account.id && t.type === 'income' && t.category === 'Возврат Друзья')
+      .reduce((sum, t) => sum + t.amount, 0);
+
+    const friendsDebt = friendsExpenses - friendsReturns;
+    return {
+      total: debt,
+      my: debt - friendsDebt,
+      friends: friendsDebt
+    };
+  }
+  return { total: debt, my: debt, friends: 0 };
+}
+
 function renderAccounts() {
   const grid = $('#accounts-grid');
-  const assets = data.accounts.filter(a => a.type !== 'debt');
+  const assets = data.accounts.filter(a => a.type !== 'debt' && !a.isHidden);
 
   grid.innerHTML = assets.map(account => {
     let subline = '';
     let mainClass = account.balance >= 0 ? 'positive' : 'negative';
 
-    // Credit Limit Logic
     if (account.limit) {
-      const debt = account.limit - account.balance;
-      if (debt > 0) {
-        subline = `<div style="font-size: 0.75rem; color: var(--expense); margin-top: 4px;">Долг: ${formatMoney(debt)}</div>`;
+      const breakdown = calculateCreditBreakdown(account);
+      if (breakdown && breakdown.total > 0) {
+        // Simple display: just the debt to bank
+        subline = `<div style="font-size: 0.75rem; color: var(--expense); margin-top: 4px;">Долг банку: ${formatMoney(breakdown.total)}</div>`;
       } else {
         subline = `<div style="font-size: 0.75rem; color: var(--income); margin-top: 4px;">Погашено</div>`;
       }
@@ -133,7 +158,6 @@ function renderAccounts() {
     </div>
   `}).join('');
 
-  // Calculate and display total balance
   // Calculate and display balances
   const ownBalance = assets.filter(a => !a.limit).reduce((sum, a) => sum + a.balance, 0);
   const creditBalance = assets.filter(a => a.limit).reduce((sum, a) => sum + a.balance, 0);
@@ -143,22 +167,57 @@ function renderAccounts() {
 }
 
 function renderDebts() {
-  const row = $('#debts-row');
-  // Hide debts with 0 balance (paid off)
-  const debts = data.accounts.filter(a => a.type === 'debt' && Math.abs(a.balance) > 0);
+  const debtsSection = $('#debts-section');
+  const owedSection = $('#owed-section');
+  const debtsRow = $('#debts-row');
+  const owedRow = $('#owed-row');
 
-  if (debts.length === 0) {
-    $('#debts-section').style.display = 'none';
-    return;
-  }
-
-  $('#debts-section').style.display = 'block';
-  row.innerHTML = debts.map(debt => `
+  // 1. Regular Debts (My liabilities)
+  const myDebts = data.accounts.filter(a => a.type === 'debt' && Math.abs(a.balance) > 0);
+  let myDebtsHtml = myDebts.map(debt => `
     <div class="debt-item">
       <span class="debt-name">${debt.name}:</span>
       <span class="debt-amount">${formatMoney(Math.abs(debt.balance))}</span>
     </div>
   `).join('');
+
+  // 2. Add Credit Card (My Portion)
+  const creditAccount = data.accounts.find(a => a.id === 'credit');
+  let friendsDebtVal = 0;
+
+  if (creditAccount) {
+    const breakdown = calculateCreditBreakdown(creditAccount);
+    if (breakdown && breakdown.my > 50) {
+      myDebtsHtml += `
+            <div class="debt-item">
+              <span class="debt-name">Кредитка (Мои):</span>
+              <span class="debt-amount">${formatMoney(breakdown.my)}</span>
+            </div>
+          `;
+    }
+    if (breakdown) friendsDebtVal = breakdown.friends;
+  }
+
+  // 3. Render My Debts Section
+  if (!myDebtsHtml) {
+    debtsSection.style.display = 'none';
+  } else {
+    debtsSection.style.display = 'block';
+    debtsRow.innerHTML = myDebtsHtml;
+  }
+
+  // 4. Render Owed TO Me Section
+  if (friendsDebtVal > 50) {
+    owedSection.style.display = 'block';
+    owedRow.innerHTML = `
+        <div class="debt-item">
+            <span class="debt-name">Друзья (Реклама):</span>
+            <span class="debt-amount" style="color: var(--income);">${formatMoney(friendsDebtVal)}</span>
+        </div>
+      `;
+  } else {
+    owedSection.style.display = 'none';
+  }
 }
 
 function renderAnalytics() {
