@@ -1,9 +1,14 @@
-const CACHE_NAME = 'ghost-budget-v5-autoupdate';
+const CACHE_NAME = 'ghost-budget-v6-modular';
 const ASSETS = [
     '/',
     '/index.html',
     '/style.css',
-    '/app.js',
+    '/js/main.js',
+    '/js/utils.js',
+    '/js/storage.js',
+    '/js/state.js',
+    '/js/actions.js',
+    '/js/render.js',
     // '/data/budget.json', // Dynamic now
     '/manifest.json',
     '/assets/icons/icon-192.png',
