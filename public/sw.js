@@ -1,25 +1,31 @@
-const CACHE_NAME = 'ghost-budget-v6-modular';
-const ASSETS = [
+/**
+ * Ghost Budget — Service Worker v2.0
+ * Optimized for Supabase architecture
+ */
+
+const CACHE_NAME = 'ghost-budget-v2-supabase';
+const STATIC_ASSETS = [
     '/',
     '/index.html',
     '/style.css',
     '/js/main.js',
-    '/js/utils.js',
-    '/js/storage.js',
-    '/js/state.js',
-    '/js/actions.js',
-    '/js/render.js',
-    // '/data/budget.json', // Dynamic now
+    '/js/config.js',
+    '/js/supabase/client.js',
+    '/js/supabase/auth.js',
+    '/js/supabase/accounts.js',
+    '/js/supabase/transactions.js',
+    '/js/supabase/categories.js',
+    '/js/supabase/index.js',
     '/manifest.json',
     '/assets/icons/icon-192.png',
     '/assets/icons/icon-512.png'
 ];
 
-// Install — cache assets
+// Install — cache static assets
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
-            return cache.addAll(ASSETS);
+            return cache.addAll(STATIC_ASSETS);
         })
     );
     self.skipWaiting();
@@ -37,43 +43,25 @@ self.addEventListener('activate', (event) => {
     self.clients.claim();
 });
 
-// Fetch Strategies
+// Fetch Strategy
 self.addEventListener('fetch', (event) => {
     const url = new URL(event.request.url);
 
-    // 1. Data File: Network First (Critical for correctness)
-    if (url.pathname.includes('budget.json')) {
-        event.respondWith(
-            fetch(event.request)
-                .then(res => {
-                    if (res.ok) {
-                        const clone = res.clone();
-                        caches.open(CACHE_NAME).then(c => c.put(event.request, clone));
-                    }
-                    return res;
-                })
-                .catch(() => caches.match(event.request))
-        );
+    // Skip Supabase API calls — always use network
+    if (url.hostname.includes('supabase')) {
         return;
     }
 
-    // 2. HTML (Navigation): Network First (Critical for updates)
-    // This ensures we always get the new index.html if we are online.
+    // Navigation (HTML): Network First
     if (event.request.mode === 'navigate') {
         event.respondWith(
             fetch(event.request)
-                .then(res => {
-                    return res;
-                })
-                .catch(() => {
-                    return caches.match('/index.html') || caches.match('/');
-                })
+                .catch(() => caches.match('/index.html'))
         );
         return;
     }
 
-    // 3. Static Assets (CSS, JS, Images): Stale-While-Revalidate
-    // Serve cache immediately, but update it in background for next time.
+    // Static Assets: Stale-While-Revalidate
     event.respondWith(
         caches.match(event.request).then(cached => {
             const networkFetch = fetch(event.request).then(res => {
@@ -81,7 +69,8 @@ self.addEventListener('fetch', (event) => {
                     caches.open(CACHE_NAME).then(c => c.put(event.request, res.clone()));
                 }
                 return res;
-            });
+            }).catch(() => cached);
+
             return cached || networkFetch;
         })
     );

@@ -1,7 +1,7 @@
 {
   "name": "Ghost Budget",
   "short_name": "Budget",
-  "description": "Минималистичный локальный трекер бюджета",
+  "description": "Персональный трекер бюджета",
   "start_url": "/index.html",
   "display": "standalone",
   "background_color": "#FAFAFA",
