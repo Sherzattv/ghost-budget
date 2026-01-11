@@ -806,6 +806,7 @@ body {
     transform: translateY(0);
   }
 
+  /* FAB: show on mobile (JS handles auth screen visibility) */
   .fab-add {
     display: flex;
     align-items: center;

@@ -89,6 +89,7 @@ async function ensureProfile() {
 function showAuthScreen() {
     $('#auth-screen').style.display = 'flex';
     $('#app-layout').style.display = 'none';
+    $('#fab-add').style.display = 'none'; // Hide FAB on auth screen
 }
 
 function showApp() {
