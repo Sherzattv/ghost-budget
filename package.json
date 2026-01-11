@@ -1,7 +1,8 @@
 {
     "name": "ghost-budget",
-    "version": "1.0.0",
-    "description": "Минималистичный локальный трекер бюджета",
+    "version": "2.0.0",
+    "description": "Персональный трекер бюджета с Supabase",
+    "type": "module",
     "scripts": {
         "start": "npx serve public -l $PORT",
         "dev": "npx serve public -l 3000"
@@ -9,7 +10,8 @@
     "keywords": [
         "budget",
         "finance",
-        "pwa"
+        "pwa",
+        "supabase"
     ],
     "author": "Sherzat",
     "license": "MIT"

@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ghost Budget</title>
-  <meta name="description" content="Минималистичный локальный трекер бюджета">
+  <meta name="description" content="Персональный трекер бюджета">
 
   <!-- PWA -->
   <link rel="manifest" href="manifest.json">
@@ -23,18 +23,71 @@
 </head>
 
 <body>
-  <div class="app-layout">
+  <!-- Auth Screen (shown when not logged in) -->
+  <div class="auth-screen" id="auth-screen">
+    <div class="auth-container">
+      <div class="auth-header">
+        <span class="logo-text">ghost<span class="logo-accent">budget</span></span>
+        <p class="auth-subtitle">Войди чтобы начать</p>
+      </div>
+
+      <div class="auth-tabs" id="auth-tabs">
+        <button class="tab active" data-tab="login">Вход</button>
+        <button class="tab" data-tab="register">Регистрация</button>
+      </div>
+
+      <!-- Login Form -->
+      <form class="auth-form" id="login-form">
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" class="form-input" id="login-email" placeholder="email@example.com" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Пароль</label>
+          <input type="password" class="form-input" id="login-password" placeholder="••••••••" required minlength="6">
+        </div>
+        <div class="auth-error" id="login-error"></div>
+        <button type="submit" class="btn btn-primary btn-full" id="login-btn">Войти</button>
+      </form>
+
+      <!-- Register Form -->
+      <form class="auth-form" id="register-form" style="display: none;">
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" class="form-input" id="register-email" placeholder="email@example.com" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Пароль</label>
+          <input type="password" class="form-input" id="register-password" placeholder="минимум 6 символов" required
+            minlength="6">
+        </div>
+        <div class="auth-error" id="register-error"></div>
+        <button type="submit" class="btn btn-primary btn-full" id="register-btn">Создать аккаунт</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- App Layout (shown when logged in) -->
+  <div class="app-layout" id="app-layout" style="display: none;">
     <!-- Main Content -->
     <main class="main-content">
       <!-- Header -->
       <header class="header">
         <div class="logo">
           <span class="logo-text">ghost<span class="logo-accent">budget</span></span>
-          <div id="server-status" class="status-indicator" title="Checking status..."></div>
+          <div id="server-status" class="status-indicator online" title="Supabase connected"></div>
         </div>
-        <button class="btn btn-ghost btn-sm" id="btn-manage-accounts">
-          Управление счетами
-        </button>
+        <div class="header-actions">
+          <button class="btn btn-ghost btn-sm" id="btn-manage-accounts">Счета</button>
+          <div class="user-menu" id="user-menu">
+            <button class="btn btn-ghost btn-sm user-btn" id="user-btn">
+              <span id="user-email">user</span> ▾
+            </button>
+            <div class="user-dropdown" id="user-dropdown">
+              <button class="dropdown-item" id="btn-logout">Выйти</button>
+            </div>
+          </div>
+        </div>
       </header>
 
       <!-- Balance Section -->
@@ -98,9 +151,7 @@
 
       <!-- Footer -->
       <footer class="footer">
-        <span>данные хранятся локально</span>
-        <button class="btn btn-ghost btn-sm" id="btn-export">Экспорт</button>
-        <button class="btn btn-ghost btn-sm" id="btn-import">Импорт</button>
+        <span>данные в облаке</span>
       </footer>
     </main>
 
@@ -148,7 +199,7 @@
           <input type="text" class="form-input" id="input-note" placeholder="...">
         </div>
 
-        <button type="submit" class="btn btn-primary btn-full">Добавить</button>
+        <button type="submit" class="btn btn-primary btn-full" id="btn-add-transaction">Добавить</button>
       </form>
 
       <div class="panel-footer">
@@ -200,6 +251,11 @@
         </form>
       </div>
     </div>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loading-overlay">
+    <div class="loading-spinner"></div>
   </div>
 
   <script type="module" src="js/main.js"></script>
