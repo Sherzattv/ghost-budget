@@ -61,12 +61,29 @@ async function checkAuth() {
 
     if (session?.user) {
         currentUser = session.user;
+        await ensureProfile(); // Ensure profile exists for legacy users
         showApp();
         await loadData();
     } else {
         showAuthScreen();
     }
     showLoading(false);
+}
+
+// Ensure profile exists (for users created before migration)
+async function ensureProfile() {
+    if (!currentUser) return;
+
+    const profile = await auth.getProfile();
+    if (!profile) {
+        // Profile doesn't exist — create it
+        const { supabase } = await import('./supabase/client.js');
+        await supabase.from('profiles').insert({
+            id: currentUser.id,
+            display_name: currentUser.email
+        }).single();
+        console.log('Created profile for legacy user:', currentUser.email);
+    }
 }
 
 function showAuthScreen() {
