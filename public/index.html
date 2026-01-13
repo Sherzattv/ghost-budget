@@ -253,6 +253,50 @@
     </div>
   </div>
 
+  <!-- Modal: Modify Account -->
+  <div class="modal-overlay" id="modal-modify-account">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">Редактирование счёта</h3>
+        <button class="modal-close" id="modal-modify-account-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="modify-account-form">
+          <input type="hidden" id="modify-account-id">
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Название</label>
+              <input type="text" class="form-input" id="modify-account-name" required>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Баланс (факт)</label>
+              <input type="number" class="form-input" id="modify-account-balance" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Тип</label>
+              <select class="form-select" id="modify-account-type">
+                <option value="asset">Актив</option>
+                <option value="savings">Накопления</option>
+                <option value="debt">Долг</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Кредитный лимит (если есть)</label>
+            <input type="number" class="form-input" id="modify-account-limit" placeholder="0">
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-full">Сохранить</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <!-- Loading Overlay -->
   <div class="loading-overlay" id="loading-overlay">
     <div class="loading-spinner"></div>

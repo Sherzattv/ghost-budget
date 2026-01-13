@@ -335,10 +335,13 @@ function renderAccountsList() {
     list.innerHTML = accountsCache.map(account => `
         <div class="account-list-item">
             <span class="account-name">${account.name}</span>
-            <span class="account-balance ${account.balance >= 0 ? 'positive' : 'negative'}">
-                ${formatMoney(account.balance)}
-            </span>
-            <button class="btn btn-ghost btn-sm btn-danger delete-account-btn" data-id="${account.id}" title="Удалить">×</button>
+            <div class="account-actions">
+                <span class="account-balance ${account.balance >= 0 ? 'positive' : 'negative'}">
+                    ${formatMoney(account.balance)}
+                </span>
+                <button class="btn btn-ghost btn-sm edit-account-btn" data-id="${account.id}" title="Редактировать">✎</button>
+                <button class="btn btn-ghost btn-sm btn-danger delete-account-btn" data-id="${account.id}" title="Удалить">×</button>
+            </div>
         </div>
     `).join('');
 }
@@ -476,6 +479,58 @@ async function handleDeleteAccount(id) {
         renderAccountsList();
         renderAccountOptions();
         renderAccounts();
+    }
+
+    showLoading(false);
+}
+
+async function handleModifyAccount(id) {
+    const account = accountsCache.find(a => a.id === id);
+    if (!account) return;
+
+    $('#modify-account-id').value = account.id;
+    $('#modify-account-name').value = account.name;
+    $('#modify-account-balance').value = account.balance;
+    $('#modify-account-type').value = account.type;
+    $('#modify-account-limit').value = account.credit_limit || '';
+
+    closeModal('modal-accounts');
+    openModal('modal-modify-account');
+}
+
+async function handleSaveAccountChanges(e) {
+    e.preventDefault();
+    showLoading(true);
+
+    const id = $('#modify-account-id').value;
+    const name = $('#modify-account-name').value;
+    const balance = parseFloat($('#modify-account-balance').value);
+    const type = $('#modify-account-type').value;
+    const limit = parseFloat($('#modify-account-limit').value); // Can be NaN
+
+    const updates = {
+        name,
+        balance,
+        type,
+        credit_limit: isNaN(limit) ? null : limit
+    };
+
+    const { data, error } = await accounts.updateAccount(id, updates);
+
+    if (error) {
+        alert(error.message);
+    } else {
+        // Update cache
+        const index = accountsCache.findIndex(a => a.id === id);
+        if (index !== -1) {
+            accountsCache[index] = data;
+        }
+
+        closeModal('modal-modify-account');
+        renderAccountsList(); // Optional, if we want to go back to list?
+        renderAccountOptions();
+        renderAccounts();
+        renderDebts(); // In case debt changed
     }
 
     showLoading(false);
@@ -619,8 +674,14 @@ function setupEventListeners() {
     $('#accounts-list')?.addEventListener('click', (e) => {
         if (e.target.classList.contains('delete-account-btn')) {
             handleDeleteAccount(e.target.dataset.id);
+        } else if (e.target.classList.contains('edit-account-btn')) {
+            handleModifyAccount(e.target.dataset.id);
         }
     });
+
+    // Modify Account
+    $('#modify-account-form')?.addEventListener('submit', handleSaveAccountChanges);
+    $('#modal-modify-account-close')?.addEventListener('click', () => closeModal('modal-modify-account'));
 
     // Modal overlay click
     $$('.modal-overlay').forEach(modal => {

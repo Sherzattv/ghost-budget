@@ -704,6 +704,24 @@ body {
   font-size: 0.8rem;
 }
 
+.account-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.edit-account-btn {
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  border-color: transparent;
+}
+
+.edit-account-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+
 /* ─── FAB Button ─── */
 .fab-add {
   display: none;
