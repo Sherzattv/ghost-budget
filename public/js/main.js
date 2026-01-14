@@ -303,21 +303,48 @@ async function renderTransactions() {
 
 function renderAccountOptions() {
     const assets = accountsCache.filter(a => a.type !== 'debt');
-    const allAccounts = accountsCache;
 
     const assetOptions = assets.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
-    const allOptions = allAccounts.map(a => {
-        const label = a.type === 'debt' ? `${a.name} (долг)` : a.name;
-        return `<option value="${a.id}">${label}</option>`;
-    }).join('');
 
     const accountSelect = $('#input-account');
     const fromSelect = $('#input-from-account');
-    const toSelect = $('#input-to-account');
 
     if (accountSelect) accountSelect.innerHTML = assetOptions;
-    if (fromSelect) fromSelect.innerHTML = assetOptions;
-    if (toSelect) toSelect.innerHTML = allOptions;
+    if (fromSelect) {
+        fromSelect.innerHTML = assetOptions;
+        // Initialize "to" select with exclusion
+        updateTransferSelects();
+    }
+}
+
+/**
+ * Smart mutual exclusion for transfer selects
+ * Updates "to" dropdown to exclude the selected "from" account
+ */
+function updateTransferSelects() {
+    const fromSelect = $('#input-from-account');
+    const toSelect = $('#input-to-account');
+    if (!fromSelect || !toSelect) return;
+
+    const selectedFromId = fromSelect.value;
+    const selectedToId = toSelect.value;
+    const allAccounts = accountsCache;
+
+    // Build "to" options excluding the selected "from" account
+    const toOptions = allAccounts
+        .filter(a => a.id !== selectedFromId)
+        .map(a => {
+            const label = a.type === 'debt' ? `${a.name} (долг)` : a.name;
+            return `<option value="${a.id}">${label}</option>`;
+        })
+        .join('');
+
+    toSelect.innerHTML = toOptions;
+
+    // Try to preserve previous "to" selection if still valid
+    if (selectedToId && selectedToId !== selectedFromId) {
+        toSelect.value = selectedToId;
+    }
 }
 
 function renderCategoriesList() {
@@ -359,6 +386,13 @@ async function handleAddTransaction(e) {
 
     if (!amount || amount <= 0) {
         $('#input-amount').focus();
+        return;
+    }
+
+    // Validate transfer: accounts must be different
+    if (currentTransactionType === 'transfer' && fromAccountId === toAccountId) {
+        alert('Нельзя переводить на тот же счёт');
+        $('#input-to-account').focus();
         return;
     }
 
@@ -678,6 +712,9 @@ function setupEventListeners() {
 
     // Transaction form
     $('#transaction-form')?.addEventListener('submit', handleAddTransaction);
+
+    // Transfer account mutual exclusion
+    $('#input-from-account')?.addEventListener('change', updateTransferSelects);
 
     // Transaction delete (event delegation)
     $('#transactions')?.addEventListener('click', (e) => {
