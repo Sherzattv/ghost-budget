@@ -500,13 +500,40 @@ async function handleModifyAccount(id) {
 
 async function handleSaveAccountChanges(e) {
     e.preventDefault();
-    showLoading(true);
 
     const id = $('#modify-account-id').value;
-    const name = $('#modify-account-name').value;
-    const balance = parseFloat($('#modify-account-balance').value);
+    const name = $('#modify-account-name').value?.trim();
+    const balanceRaw = $('#modify-account-balance').value;
+    const balance = parseFloat(balanceRaw);
     const type = $('#modify-account-type').value;
-    const limit = parseFloat($('#modify-account-limit').value); // Can be NaN
+    const limit = parseFloat($('#modify-account-limit').value);
+
+    // Validation
+    if (!name) {
+        alert('Введите название счёта');
+        $('#modify-account-name').focus();
+        return;
+    }
+
+    if (balanceRaw === '' || isNaN(balance)) {
+        alert('Введите корректный баланс');
+        $('#modify-account-balance').focus();
+        return;
+    }
+
+    // Confirm balance change
+    const oldAccount = accountsCache.find(a => a.id === id);
+    if (oldAccount && Math.abs(balance - oldAccount.balance) > 0.01) {
+        const confirmed = confirm(
+            `Изменить баланс "${oldAccount.name}"?\n\n` +
+            `Было: ${formatMoney(oldAccount.balance)}\n` +
+            `Станет: ${formatMoney(balance)}\n\n` +
+            `Разница: ${formatMoney(balance - oldAccount.balance, true)}`
+        );
+        if (!confirmed) return;
+    }
+
+    showLoading(true);
 
     const updates = {
         name,
