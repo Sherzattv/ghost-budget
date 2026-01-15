@@ -321,3 +321,5 @@ flowchart LR
 | 2026-01-15 | ✅ Fixed getCreditAccount() filter |
 | 2026-01-15 | ✅ Removed unused columns from DB |
 | 2026-01-15 | ✅ Deleted outdated ТЗ.md and Новая архитектура.md |
+| 2026-01-15 | ✨ UI/UX: Replaced account action buttons with clean Dropdown Menu (⋮) |
+| 2026-01-15 | ✨ UI/UX: Improved dropdown padding and touch targets |
