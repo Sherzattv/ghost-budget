@@ -283,12 +283,35 @@ function setupEventListeners() {
 
     // Account actions (event delegation)
     $('#accounts-list')?.addEventListener('click', (e) => {
+        // Dropdown toggle
+        if (e.target.classList.contains('dropdown-toggle')) {
+            e.stopPropagation();
+            const dropdown = e.target.closest('.dropdown');
+            // Close all other dropdowns
+            document.querySelectorAll('.dropdown.open').forEach(d => {
+                if (d !== dropdown) d.classList.remove('open');
+            });
+            dropdown?.classList.toggle('open');
+            return;
+        }
+
+        // Action buttons
         if (e.target.classList.contains('delete-account-btn')) {
             handleDeleteAccount(e.target.dataset.id);
         } else if (e.target.classList.contains('edit-account-btn')) {
             handleModifyAccount(e.target.dataset.id);
         } else if (e.target.classList.contains('archive-account-btn')) {
             handleArchiveAccount(e.target.dataset.id);
+        }
+
+        // Close dropdown after action
+        document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
+    });
+
+    // Close dropdowns on outside click
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.dropdown')) {
+            document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
         }
     });
 

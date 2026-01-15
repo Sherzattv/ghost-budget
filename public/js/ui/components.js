@@ -408,9 +408,15 @@ export function renderAccountsList() {
                     <span class="account-balance ${account.balance >= 0 ? 'positive' : 'negative'}">
                         ${formatMoney(account.balance)}
                     </span>
-                    <button class="btn btn-ghost btn-sm edit-account-btn" data-id="${account.id}" title="Редактировать">✏️</button>
-                    <button class="btn btn-ghost btn-sm archive-account-btn" data-id="${account.id}" title="В архив">📦</button>
-                    <button class="btn btn-ghost btn-sm btn-danger delete-account-btn" data-id="${account.id}" title="Удалить">🗑️</button>
+                    <div class="dropdown">
+                        <button class="btn btn-ghost btn-icon dropdown-toggle" data-id="${account.id}">⋮</button>
+                        <div class="dropdown-menu">
+                            <button class="dropdown-item edit-account-btn" data-id="${account.id}">✏️ Редактировать</button>
+                            <button class="dropdown-item archive-account-btn" data-id="${account.id}">📦 В архив</button>
+                            <div class="dropdown-divider"></div>
+                            <button class="dropdown-item dropdown-item-danger delete-account-btn" data-id="${account.id}">🗑️ Удалить</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         `;

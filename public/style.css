@@ -735,15 +735,77 @@ body {
   gap: var(--spacing-sm);
 }
 
-.edit-account-btn {
-  font-size: 1.1rem;
-  color: var(--text-secondary);
-  border-color: transparent;
+/* ─── Dropdown Menu ─── */
+.dropdown {
+  position: relative;
 }
 
-.edit-account-btn:hover {
-  color: var(--text-primary);
+.btn-icon {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  min-height: unset;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dropdown-toggle {
+  font-weight: bold;
+  letter-spacing: 2px;
+}
+
+.dropdown-menu {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  margin-top: 4px;
+  min-width: 160px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
+  z-index: 100;
+  display: none;
+  overflow: hidden;
+}
+
+.dropdown.open .dropdown-menu {
+  display: block;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.dropdown-item:hover {
   background: var(--bg-hover);
+}
+
+.dropdown-item-danger {
+  color: var(--expense);
+}
+
+.dropdown-item-danger:hover {
+  background: var(--expense-light);
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: var(--border-light);
+  margin: var(--spacing-xs) 0;
 }
 
 
