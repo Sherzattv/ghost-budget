@@ -780,7 +780,7 @@ body {
   align-items: center;
   gap: var(--spacing-sm);
   width: 100%;
-  padding: var(--spacing-sm) var(--spacing-md);
+  padding: 12px var(--spacing-md);
   font-family: var(--font-mono);
   font-size: 0.8rem;
   background: transparent;
