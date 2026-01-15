@@ -166,6 +166,7 @@ body {
 .btn-ghost {
   background: transparent;
   color: var(--text-secondary);
+  border-color: transparent;
 }
 
 .btn-sm {
