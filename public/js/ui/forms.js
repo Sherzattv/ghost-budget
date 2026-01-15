@@ -623,14 +623,49 @@ export function handleModifyAccount(id) {
     const account = getAccountById(id);
     if (!account) return;
 
+    // Basic fields
     $('#modify-account-id').value = account.id;
     $('#modify-account-name').value = account.counterparty || account.name;
     $('#modify-account-balance').value = account.balance;
     $('#modify-account-type').value = account.type;
+
+    // Type-specific fields
     $('#modify-account-limit').value = account.credit_limit || '';
+    $('#modify-account-counterparty').value = account.counterparty || '';
+    $('#modify-account-return-date').value = account.expected_return_date || '';
+
+    // Show/hide fields based on type
+    updateModifyFormVisibility(account.type, !!account.credit_limit);
 
     closeModal('modal-accounts');
     openModal('modal-modify-account');
+}
+
+/**
+ * Update modify form field visibility based on account type
+ * @param {string} type - Account type
+ * @param {boolean} hasCreditLimit - Whether account has credit limit
+ */
+function updateModifyFormVisibility(type, hasCreditLimit = false) {
+    const creditLimitGroup = $('#modify-group-credit-limit');
+    const counterpartyGroup = $('#modify-group-counterparty');
+    const returnDateGroup = $('#modify-group-return-date');
+
+
+    // Reset all
+    if (creditLimitGroup) creditLimitGroup.style.display = 'none';
+    if (counterpartyGroup) counterpartyGroup.style.display = 'none';
+    if (returnDateGroup) returnDateGroup.style.display = 'none';
+
+    // Show based on type
+    if (type === 'asset' && hasCreditLimit) {
+        // Credit card (asset with credit_limit)
+        if (creditLimitGroup) creditLimitGroup.style.display = 'block';
+    } else if (type === 'receivable' || type === 'liability') {
+        // Debts
+        if (counterpartyGroup) counterpartyGroup.style.display = 'block';
+        if (returnDateGroup) returnDateGroup.style.display = 'block';
+    }
 }
 
 /**
@@ -671,9 +706,15 @@ export async function handleSaveAccountChanges(e) {
         credit_limit: isNaN(limit) ? null : limit
     };
 
-    // If it's a receivable/liability, update counterparty too
+    // Type-specific fields
     if (['receivable', 'liability'].includes(type)) {
-        updates.counterparty = name;
+        const counterparty = $('#modify-account-counterparty')?.value?.trim();
+        const returnDate = $('#modify-account-return-date')?.value;
+
+        updates.counterparty = counterparty || name;
+        if (returnDate) {
+            updates.expected_return_date = returnDate;
+        }
     }
 
     const { data, error } = await accounts.updateAccount(id, updates);

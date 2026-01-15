@@ -381,9 +381,22 @@
             </div>
           </div>
 
-          <div class="form-group">
-            <label class="form-label">Кредитный лимит (если есть)</label>
+          <!-- Asset/Savings: Credit Limit -->
+          <div class="form-group" id="modify-group-credit-limit" style="display: none;">
+            <label class="form-label">Кредитный лимит</label>
             <input type="number" class="form-input" id="modify-account-limit" placeholder="0">
+          </div>
+
+          <!-- Receivable/Liability: Counterparty -->
+          <div class="form-group" id="modify-group-counterparty" style="display: none;">
+            <label class="form-label">Контрагент</label>
+            <input type="text" class="form-input" id="modify-account-counterparty" placeholder="Имя должника">
+          </div>
+
+          <!-- Receivable/Liability: Expected Return Date -->
+          <div class="form-group" id="modify-group-return-date" style="display: none;">
+            <label class="form-label">Ожидаемая дата возврата</label>
+            <input type="date" class="form-input" id="modify-account-return-date">
           </div>
 
           <button type="submit" class="btn btn-primary btn-full">Сохранить</button>
