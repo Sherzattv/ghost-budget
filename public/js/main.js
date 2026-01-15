@@ -283,14 +283,30 @@ function setupEventListeners() {
 
     // Account actions (event delegation)
     $('#accounts-list')?.addEventListener('click', (e) => {
-        // Dropdown toggle
+        // Dropdown toggle with smart positioning
         if (e.target.classList.contains('dropdown-toggle')) {
             e.stopPropagation();
             const dropdown = e.target.closest('.dropdown');
+
             // Close all other dropdowns
             document.querySelectorAll('.dropdown.open').forEach(d => {
-                if (d !== dropdown) d.classList.remove('open');
+                if (d !== dropdown) {
+                    d.classList.remove('open', 'dropdown-up');
+                }
             });
+
+            // Smart direction: check if dropdown would overflow modal
+            if (!dropdown.classList.contains('open')) {
+                const btn = e.target;
+                const modal = btn.closest('.modal');
+                const btnRect = btn.getBoundingClientRect();
+                const modalRect = modal?.getBoundingClientRect() || { bottom: window.innerHeight };
+                const spaceBelow = modalRect.bottom - btnRect.bottom;
+
+                // If less than 150px below, open upward
+                dropdown.classList.toggle('dropdown-up', spaceBelow < 150);
+            }
+
             dropdown?.classList.toggle('open');
             return;
         }

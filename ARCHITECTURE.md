@@ -145,7 +145,11 @@ public/
     │   └── index.js    # Re-exports
     └── ui/             # UI components
         ├── components.js
-        ├── forms.js
+        ├── forms.js        # Re-exports (barrel)
+        ├── forms/          # Form modules
+        │   ├── transaction-form.js
+        │   ├── debt-form.js
+        │   └── account-form.js
         ├── modals.js
         └── index.js
 ```
@@ -155,7 +159,9 @@ public/
 | Module | LOC | Purpose |
 |--------|-----|---------|
 | `state.js` | 336 | Centralized state, computed getters |
-| `forms.js` | 724 | Form handlers, validation |
+| `forms/transaction-form.js` | 190 | Transaction CRUD, form state |
+| `forms/debt-form.js` | 270 | Debt operations (lend/borrow/collect/repay) |
+| `forms/account-form.js` | 280 | Account management |
 | `components.js` | 434 | Render functions |
 | `debts.js` | 380 | Debt operations API |
 | `transactions.js` | 209 | CRUD transactions |

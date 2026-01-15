@@ -145,8 +145,22 @@ function renderObligationCard(account, overdueList = []) {
         ? `+${formatMoney(account.balance)}`
         : `−${formatMoney(Math.abs(account.balance))}`;
 
-    const arrow = isReceivable ? '↑' : '↓';
+    // Determine obligation type label
+    let typeLabel;
+    if (account.obligation_kind) {
+        const kindLabels = {
+            'person': 'долг',
+            'credit': 'кредит',
+            'installment': 'рассрочка',
+            'credit_card': 'кредитка'
+        };
+        typeLabel = kindLabels[account.obligation_kind] || account.obligation_kind;
+    } else {
+        // Default fallback based on account type
+        typeLabel = isReceivable ? 'мне должны' : 'я должен';
+    }
 
+    // Meta info (date, overdue status)
     let metaInfo = '';
     if (account.expected_return_date) {
         metaInfo = formatDate(account.expected_return_date);
@@ -154,26 +168,13 @@ function renderObligationCard(account, overdueList = []) {
     if (isOverdue) {
         metaInfo += ' <span class="status-overdue">просрочен</span>';
     }
-    if (account.obligation_kind && account.obligation_kind !== 'person') {
-        const kindLabels = {
-            'credit': 'кредит',
-            'installment': 'рассрочка',
-            'credit_card': 'кредитка'
-        };
-        metaInfo += ` <span class="obligation-kind">${kindLabels[account.obligation_kind] || account.obligation_kind}</span>`;
-    }
 
     return `
         <div class="obligation-card ${statusClass}" data-id="${account.id}">
-            <div class="card-main">
-                <div class="card-left">
-                    <span class="card-arrow ${isReceivable ? 'up' : 'down'}">${arrow}</span>
-                    <span class="card-name">${displayName}</span>
-                </div>
-                <span class="card-amount">${displayBalance}</span>
-            </div>
+            <div class="card-name">${displayName}</div>
+            <div class="card-type">${typeLabel}</div>
+            <div class="card-balance">${displayBalance}</div>
             ${metaInfo ? `<div class="card-meta">${metaInfo}</div>` : ''}
-            <button class="card-action" data-id="${account.id}" data-type="${account.type}" title="Возврат">+</button>
         </div>
     `;
 }
@@ -390,13 +391,25 @@ export function renderAccountsList() {
     const allAccounts = getAccounts();
 
     list.innerHTML = allAccounts.map(account => {
-        const typeLabels = {
-            'asset': 'актив',
-            'savings': 'накопления',
-            'receivable': 'мне должны',
-            'liability': 'я должен'
-        };
-        const typeLabel = typeLabels[account.type] || account.type;
+        // Type labels (Title Case, clean)
+        let typeLabel;
+
+        if (account.type === 'asset') {
+            typeLabel = account.credit_limit ? 'Кредитная Карта' : 'Актив';
+        } else if (account.type === 'savings') {
+            typeLabel = 'Накопления';
+        } else if (account.type === 'receivable') {
+            typeLabel = 'Мне Должны';
+        } else if (account.type === 'liability') {
+            const kindMap = {
+                'credit': 'Кредит',
+                'installment': 'Рассрочка',
+                'credit_card': 'Кредитная Карта'
+            };
+            typeLabel = kindMap[account.obligation_kind] || 'Я Должен';
+        } else {
+            typeLabel = account.type;
+        }
 
         return `
             <div class="account-list-item">

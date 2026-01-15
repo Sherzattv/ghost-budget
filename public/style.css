@@ -708,8 +708,10 @@ body {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
-  max-height: 200px;
+  max-height: 250px;
   overflow-y: auto;
+  overflow-x: visible;
+  padding-bottom: var(--spacing-lg);
 }
 
 .account-list-item {
@@ -773,6 +775,14 @@ body {
 
 .dropdown.open .dropdown-menu {
   display: block;
+}
+
+/* Smart dropdown direction (applied via JS based on viewport) */
+.dropdown.dropdown-up .dropdown-menu {
+  top: auto;
+  bottom: 100%;
+  margin-top: 0;
+  margin-bottom: 4px;
 }
 
 .dropdown-item {
@@ -1298,11 +1308,28 @@ body {
 }
 
 .card-name {
-  font-weight: 500;
-  font-size: 0.85rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: var(--text-primary);
+}
+
+.card-type {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+  text-transform: lowercase;
+}
+
+.card-balance {
+  font-weight: 600;
+  font-size: 1.1rem;
+  font-variant-numeric: tabular-nums;
+  margin-top: var(--spacing-sm);
 }
 
 .card-amount {
@@ -1318,6 +1345,14 @@ body {
 }
 
 .obligation-card.negative .card-amount {
+  color: var(--expense);
+}
+
+.obligation-card.positive .card-balance {
+  color: var(--income);
+}
+
+.obligation-card.negative .card-balance {
   color: var(--expense);
 }
 
@@ -1389,7 +1424,6 @@ body {
 .account-type-label {
   font-size: 0.65rem;
   color: var(--text-muted);
-  text-transform: lowercase;
 }
 
 /* ─── Responsive Adjustments for Obligations ─── */
