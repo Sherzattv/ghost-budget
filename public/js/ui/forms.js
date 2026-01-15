@@ -128,7 +128,7 @@ export async function handleAddTransaction(e) {
 async function handleDebtOperation(e) {
     e.preventDefault();
 
-    const direction = $('#input-debt-direction')?.value;
+    const direction = $('#input-debt-action')?.value;
     const amount = parseFloat($('#input-amount')?.value);
     const counterparty = $('#input-counterparty')?.value?.trim();
     const counterpartySelectId = $('#input-counterparty-select')?.value;
