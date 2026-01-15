@@ -24,6 +24,7 @@ import {
     handleAddTransaction, handleDeleteTransaction,
     handleAddAccount, handleDeleteAccount,
     handleModifyAccount, handleSaveAccountChanges,
+    handleArchiveAccount, handleConfirmDelete,
     handleTransactionTypeChange, updateTransactionForm,
     handleDebtActionClick, handleDebtTypeChange, handleCreditToggleClick
 } from './ui/forms.js';
@@ -253,18 +254,62 @@ function setupEventListeners() {
     // Add account form
     $('#add-account-form')?.addEventListener('submit', handleAddAccount);
 
+    // Account type change - show/hide credit limit field + dynamic label
+    $('#new-account-type')?.addEventListener('change', (e) => {
+        const isCreditCard = e.target.value === 'credit_card';
+        const labelBalance = $('#label-balance');
+        const creditLimitGroup = $('#group-new-credit-limit');
+
+        creditLimitGroup.style.display = isCreditCard ? 'block' : 'none';
+
+        if (isCreditCard) {
+            // Меняем label и подсказку для кредитки
+            if (labelBalance) labelBalance.textContent = 'Доступно сейчас';
+            $('#new-account-limit')?.focus();
+        } else {
+            if (labelBalance) labelBalance.textContent = 'Начальный баланс';
+        }
+    });
+
+    // Credit limit input - auto-fill balance when limit is entered
+    $('#new-account-limit')?.addEventListener('input', (e) => {
+        const limit = parseFloat(e.target.value) || 0;
+        const balanceInput = $('#new-account-balance');
+        // Авто-заполняем баланс = лимит (можно потом изменить)
+        if (balanceInput && limit > 0) {
+            balanceInput.value = limit;
+        }
+    });
+
     // Account actions (event delegation)
     $('#accounts-list')?.addEventListener('click', (e) => {
         if (e.target.classList.contains('delete-account-btn')) {
             handleDeleteAccount(e.target.dataset.id);
         } else if (e.target.classList.contains('edit-account-btn')) {
             handleModifyAccount(e.target.dataset.id);
+        } else if (e.target.classList.contains('archive-account-btn')) {
+            handleArchiveAccount(e.target.dataset.id);
         }
     });
 
     // Modify account
     $('#modify-account-form')?.addEventListener('submit', handleSaveAccountChanges);
     $('#modal-modify-account-close')?.addEventListener('click', () => closeModal('modal-modify-account'));
+
+    // Delete confirmation modal
+    $('#modal-confirm-delete-close')?.addEventListener('click', () => closeModal('modal-confirm-delete'));
+
+    $('#btn-archive-account')?.addEventListener('click', () => {
+        const modal = document.getElementById('modal-confirm-delete');
+        const accountId = modal?.dataset.accountId;
+        if (accountId) handleArchiveAccount(accountId);
+    });
+
+    $('#btn-confirm-delete')?.addEventListener('click', () => {
+        const modal = document.getElementById('modal-confirm-delete');
+        const accountId = modal?.dataset.accountId;
+        if (accountId) handleConfirmDelete(accountId);
+    });
 
     // ─── UI ───
 

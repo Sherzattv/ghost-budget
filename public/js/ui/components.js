@@ -409,6 +409,7 @@ export function renderAccountsList() {
                         ${formatMoney(account.balance)}
                     </span>
                     <button class="btn btn-ghost btn-sm edit-account-btn" data-id="${account.id}" title="Редактировать">✎</button>
+                    <button class="btn btn-ghost btn-sm archive-account-btn" data-id="${account.id}" title="В архив">📁</button>
                     <button class="btn btn-ghost btn-sm btn-danger delete-account-btn" data-id="${account.id}" title="Удалить">×</button>
                 </div>
             </div>

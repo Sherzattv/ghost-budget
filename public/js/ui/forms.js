@@ -454,8 +454,6 @@ export function handleCreditToggleClick(creditType) {
     updateDebtFormFields();
 }
 
-// ─── Account Forms ───
-
 /**
  * Handle add account form submit
  * @param {Event} e - Form submit event
@@ -464,8 +462,11 @@ export async function handleAddAccount(e) {
     e.preventDefault();
 
     const name = $('#new-account-name')?.value?.trim();
-    const balance = parseFloat($('#new-account-balance')?.value) || 0;
-    const type = $('#new-account-type')?.value || 'asset';
+    const inputBalance = parseFloat($('#new-account-balance')?.value) || 0;
+    const selectedType = $('#new-account-type')?.value || 'asset';
+    const creditLimitInput = parseFloat($('#new-account-limit')?.value) || 0;
+
+    console.log('[handleAddAccount] selectedType:', selectedType, 'creditLimitInput:', creditLimitInput);
 
     // Validation
     if (!name) {
@@ -473,43 +474,142 @@ export async function handleAddAccount(e) {
         return;
     }
 
+    // Build account data based on selected type
+    let accountData = { name, is_hidden: false };
+
+    switch (selectedType) {
+        case 'asset':
+            accountData.type = 'asset';
+            accountData.balance = inputBalance;
+            break;
+
+        case 'savings':
+            accountData.type = 'savings';
+            accountData.balance = inputBalance;
+            break;
+
+        case 'credit_card':
+            // Кредитка = asset с credit_limit
+            // Validate credit limit
+            if (!creditLimitInput || creditLimitInput <= 0) {
+                showValidationError('#new-account-limit', 'Укажите кредитный лимит');
+                return;
+            }
+
+            accountData.type = 'asset';
+            accountData.credit_limit = creditLimitInput;
+            // Баланс = доступные средства (по умолчанию = лимит, можно изменить)
+            accountData.balance = inputBalance !== 0 ? inputBalance : creditLimitInput;
+            break;
+
+        default:
+            console.error('Unknown account type:', selectedType);
+            return;
+    }
+
     showLoading(true);
 
-    const { data, error } = await accounts.createAccount({ name, balance, type });
+    const { data, error } = await accounts.createAccount(accountData);
 
     if (error) {
         console.error('Add account error:', error.message);
+        showLoading(false);
+        return;
+    }
+
+    // Success - update cache and UI
+    addAccount(data);
+
+    // Reset form
+    $('#new-account-name').value = '';
+    $('#new-account-balance').value = '0';
+    $('#new-account-limit').value = '';
+    $('#new-account-type').value = 'asset';
+    $('#group-new-credit-limit').style.display = 'none';
+
+    // Close modal and re-render
+    closeModal('modal-accounts');
+    renderAccountOptions();
+    renderAccounts();
+
+    showLoading(false);
+}
+
+/**
+ * Handle delete account - check for transactions first
+ * @param {string} id - Account ID
+ */
+export async function handleDeleteAccount(id) {
+    showLoading(true);
+
+    const txCount = await accounts.getTransactionCount(id);
+
+    if (txCount > 0) {
+        // Есть транзакции — показываем модалку с предупреждением
+        const countEl = document.getElementById('delete-tx-count');
+        const modal = document.getElementById('modal-confirm-delete');
+
+        if (countEl) countEl.textContent = txCount;
+        if (modal) modal.dataset.accountId = id;
+
+        showLoading(false);
+        openModal('modal-confirm-delete');
     } else {
-        addAccount(data);
+        // Нет транзакций — сразу удаляем
+        const { error } = await accounts.deleteAccount(id);
 
-        // Reset form
-        $('#new-account-name').value = '';
-        $('#new-account-balance').value = '0';
+        if (error) {
+            console.error('Delete account error:', error.message);
+        } else {
+            removeAccount(id);
+            renderAccountsList();
+            renderAccountOptions();
+            renderAccounts();
+        }
 
+        showLoading(false);
+    }
+}
+
+/**
+ * Handle archive account (hide instead of delete)
+ * @param {string} id - Account ID
+ */
+export async function handleArchiveAccount(id) {
+    showLoading(true);
+
+    const { error } = await accounts.archiveAccount(id);
+
+    if (error) {
+        console.error('Archive account error:', error.message);
+    } else {
+        removeAccount(id);
         renderAccountsList();
         renderAccountOptions();
         renderAccounts();
+        closeModal('modal-confirm-delete');
     }
 
     showLoading(false);
 }
 
 /**
- * Handle delete account
+ * Handle confirm delete with cascade
  * @param {string} id - Account ID
  */
-export async function handleDeleteAccount(id) {
+export async function handleConfirmDelete(id) {
     showLoading(true);
 
-    const { error } = await accounts.deleteAccount(id);
+    const { error } = await accounts.deleteAccountWithTransactions(id);
 
     if (error) {
-        console.error('Delete account error:', error.message);
+        console.error('Cascade delete error:', error.message);
     } else {
         removeAccount(id);
         renderAccountsList();
         renderAccountOptions();
         renderAccounts();
+        closeModal('modal-confirm-delete');
     }
 
     showLoading(false);

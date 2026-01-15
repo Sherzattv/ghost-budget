@@ -55,23 +55,37 @@ export async function getAccountById(id) {
 
 /**
  * Create a new account
- * @param {Object} account - { name, balance?, type, credit_limit?, is_hidden? }
+ * @param {Object} account - { name, balance?, type, credit_limit?, obligation_kind?, counterparty?, is_hidden? }
  * @returns {Promise<{data: Object|null, error: Error|null}>}
  */
-export async function createAccount({ name, balance = 0, type = 'asset', credit_limit = null, is_hidden = false }) {
+export async function createAccount({
+    name,
+    balance = 0,
+    type = 'asset',
+    credit_limit = null,
+    obligation_kind = null,
+    counterparty = null,
+    is_hidden = false
+}) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: new Error('Not authenticated') };
 
+    const insertData = {
+        user_id: user.id,
+        name,
+        balance,
+        type,
+        is_hidden
+    };
+
+    // Add optional fields only if provided
+    if (credit_limit !== null) insertData.credit_limit = credit_limit;
+    if (obligation_kind !== null) insertData.obligation_kind = obligation_kind;
+    if (counterparty !== null) insertData.counterparty = counterparty;
+
     const { data, error } = await supabase
         .from('accounts')
-        .insert({
-            user_id: user.id,
-            name,
-            balance,
-            type,
-            credit_limit,
-            is_hidden
-        })
+        .insert(insertData)
         .select()
         .single();
 
@@ -96,22 +110,64 @@ export async function updateAccount(id, updates) {
 }
 
 /**
- * Delete an account
+ * Delete an account (only if no transactions)
  * @param {string} id
  * @returns {Promise<{error: Error|null}>}
  */
 export async function deleteAccount(id) {
-    // Check for transactions first
-    const { data: transactions } = await supabase
-        .from('transactions')
-        .select('id')
-        .or(`account_id.eq.${id},from_account_id.eq.${id},to_account_id.eq.${id}`)
-        .limit(1);
+    const { error } = await supabase
+        .from('accounts')
+        .delete()
+        .eq('id', id);
 
-    if (transactions && transactions.length > 0) {
-        return { error: new Error('Нельзя удалить счёт с транзакциями') };
+    return { error };
+}
+
+/**
+ * Get count of transactions linked to account
+ * @param {string} id
+ * @returns {Promise<number>}
+ */
+export async function getTransactionCount(id) {
+    const { count, error } = await supabase
+        .from('transactions')
+        .select('id', { count: 'exact', head: true })
+        .or(`account_id.eq.${id},from_account_id.eq.${id},to_account_id.eq.${id}`);
+
+    if (error) {
+        console.error('Error counting transactions:', error);
+        return 0;
+    }
+    return count || 0;
+}
+
+/**
+ * Archive account (hide instead of delete)
+ * @param {string} id
+ * @returns {Promise<{data: Object|null, error: Error|null}>}
+ */
+export async function archiveAccount(id) {
+    return updateAccount(id, { is_hidden: true });
+}
+
+/**
+ * Delete account with all related transactions (cascade)
+ * @param {string} id
+ * @returns {Promise<{error: Error|null}>}
+ */
+export async function deleteAccountWithTransactions(id) {
+    // 1. Delete all related transactions first
+    const { error: txError } = await supabase
+        .from('transactions')
+        .delete()
+        .or(`account_id.eq.${id},from_account_id.eq.${id},to_account_id.eq.${id}`);
+
+    if (txError) {
+        console.error('Error deleting transactions:', txError);
+        return { error: txError };
     }
 
+    // 2. Delete the account
     const { error } = await supabase
         .from('accounts')
         .delete()

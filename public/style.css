@@ -580,6 +580,30 @@ body {
   padding: var(--spacing-lg);
 }
 
+.modal-sm {
+  max-width: 340px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-lg);
+}
+
+.modal-actions .btn {
+  flex: 1;
+}
+
+.delete-warning {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.delete-warning strong {
+  color: var(--expense);
+}
+
 /* ─── Tabs ─── */
 .tabs {
   display: flex;

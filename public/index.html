@@ -320,22 +320,26 @@
           <div class="form-row">
             <div class="form-group">
               <label class="form-label">Название</label>
-              <input type="text" class="form-input" id="new-account-name" placeholder="Мой счёт" required>
+              <input type="text" class="form-input" id="new-account-name" name="name" placeholder="Мой счёт" required>
             </div>
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label class="form-label">Начальный баланс</label>
-              <input type="number" class="form-input" id="new-account-balance" placeholder="0" value="0">
+              <label class="form-label" id="label-balance">Начальный баланс</label>
+              <input type="number" class="form-input" id="new-account-balance" name="balance" placeholder="0" value="0">
             </div>
             <div class="form-group">
               <label class="form-label">Тип</label>
-              <select class="form-select" id="new-account-type">
+              <select class="form-select" id="new-account-type" name="type">
                 <option value="asset">Актив</option>
-                <option value="savings">Накопления</option>
-                <option value="debt">Долг</option>
+                <option value="credit_card">Кредитка</option>
+                <option value="savings">Накопление</option>
               </select>
             </div>
+          </div>
+          <div class="form-group" id="group-new-credit-limit" style="display: none;">
+            <label class="form-label">Кредитный лимит</label>
+            <input type="number" class="form-input" id="new-account-limit" name="credit_limit" placeholder="100000">
           </div>
           <button type="submit" class="btn btn-primary btn-full">Добавить счёт</button>
         </form>
@@ -383,6 +387,26 @@
 
           <button type="submit" class="btn btn-primary btn-full">Сохранить</button>
         </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Confirm Delete Account -->
+  <div class="modal-overlay" id="modal-confirm-delete">
+    <div class="modal modal-sm">
+      <div class="modal-header">
+        <h3 class="modal-title">Удалить счёт?</h3>
+        <button class="modal-close" id="modal-confirm-delete-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="delete-warning">
+          Со счётом связано <strong id="delete-tx-count">0</strong> транзакций.
+          Они тоже будут удалены безвозвратно.
+        </p>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" id="btn-archive-account">📁 Архивировать</button>
+          <button class="btn btn-danger" id="btn-confirm-delete">Удалить всё</button>
+        </div>
       </div>
     </div>
   </div>
