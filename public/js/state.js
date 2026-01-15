@@ -216,12 +216,33 @@ export function getLiabilities() {
 
 /**
  * Get active liabilities (balance < 0)
+ * Includes both personal debts and credit card debts
  * @returns {Array}
  */
 export function getActiveLiabilities() {
-    return accountsCache.filter(a =>
+    // Personal debts (type = liability with negative balance)
+    const personalDebts = accountsCache.filter(a =>
         a.type === 'liability' && Number(a.balance) < -0.01
     );
+
+    // Credit card debts (type = asset with credit_limit, where used > 0)
+    const creditDebts = getCreditCardDebts();
+
+    return [...personalDebts, ...creditDebts];
+}
+
+/**
+ * Get credit card debts (accounts with credit_limit where debt > 0)
+ * @returns {Array} - Accounts with computed debt_amount property
+ */
+export function getCreditCardDebts() {
+    return accountsCache
+        .filter(a => a.credit_limit && !a.is_hidden)
+        .map(a => {
+            const debtAmount = Number(a.credit_limit) - Number(a.balance);
+            return { ...a, debt_amount: debtAmount };
+        })
+        .filter(a => a.debt_amount > 0.01);
 }
 
 /**
@@ -266,12 +287,24 @@ export function getTotalReceivables() {
 
 /**
  * Get total liabilities (сколько я должен)
+ * Includes personal debts + credit card debts
  * @returns {number}
  */
 export function getTotalLiabilities() {
-    return accountsCache
+    // Personal debts
+    const personalDebts = accountsCache
         .filter(a => a.type === 'liability')
         .reduce((sum, a) => sum + Math.abs(Math.min(0, Number(a.balance))), 0);
+
+    // Credit card debts (credit_limit - balance)
+    const creditDebts = accountsCache
+        .filter(a => a.credit_limit && !a.is_hidden)
+        .reduce((sum, a) => {
+            const debt = Number(a.credit_limit) - Number(a.balance);
+            return sum + Math.max(0, debt);
+        }, 0);
+
+    return personalDebts + creditDebts;
 }
 
 /**
@@ -304,7 +337,8 @@ export function getCreditAccount() {
  * @returns {boolean}
  */
 export function hasActiveObligations() {
-    return getActiveReceivables().length > 0 || getActiveLiabilities().length > 0;
+    return getActiveReceivables().length > 0 ||
+        getActiveLiabilities().length > 0;
 }
 
 /**

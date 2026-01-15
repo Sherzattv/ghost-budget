@@ -129,35 +129,45 @@ export function renderObligations() {
 
 /**
  * Render single obligation card
- * @param {Object} account - receivable or liability account
+ * @param {Object} account - receivable, liability, or credit card account
  * @param {Array} overdueList - list of overdue accounts
  * @returns {string} HTML
  */
 function renderObligationCard(account, overdueList = []) {
     const isOverdue = overdueList.some(o => o.id === account.id);
     const isReceivable = account.type === 'receivable';
+    const isCreditCard = !!account.credit_limit;
 
     let statusClass = isReceivable ? 'positive' : 'negative';
     if (isOverdue) statusClass = 'overdue';
 
     const displayName = account.counterparty || account.name;
-    const displayBalance = isReceivable
-        ? `+${formatMoney(account.balance)}`
-        : `−${formatMoney(Math.abs(account.balance))}`;
+
+    // Balance display logic
+    let displayBalance;
+    if (isCreditCard) {
+        // Credit card: show debt amount (credit_limit - balance)
+        displayBalance = `−${formatMoney(account.debt_amount)}`;
+    } else if (isReceivable) {
+        displayBalance = `+${formatMoney(account.balance)}`;
+    } else {
+        displayBalance = `−${formatMoney(Math.abs(account.balance))}`;
+    }
 
     // Determine obligation type label
     let typeLabel;
-    if (account.obligation_kind) {
+    if (isCreditCard) {
+        typeLabel = 'Долг Банку';
+    } else if (account.obligation_kind) {
         const kindLabels = {
-            'person': 'долг',
-            'credit': 'кредит',
-            'installment': 'рассрочка',
-            'credit_card': 'кредитка'
+            'person': 'Долг',
+            'credit': 'Кредит',
+            'installment': 'Рассрочка',
+            'credit_card': 'Кредитка'
         };
         typeLabel = kindLabels[account.obligation_kind] || account.obligation_kind;
     } else {
-        // Default fallback based on account type
-        typeLabel = isReceivable ? 'мне должны' : 'я должен';
+        typeLabel = isReceivable ? 'Мне Должны' : 'Я Должен';
     }
 
     // Meta info (date, overdue status)
