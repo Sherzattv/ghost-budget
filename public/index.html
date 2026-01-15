@@ -110,19 +110,24 @@
         </div>
       </section>
 
-      <!-- Debts Section (Liabilities) -->
-      <section class="section section-debts" id="debts-section" style="display: none;">
-        <h2 class="section-title">Долги</h2>
-        <div class="debts-row" id="debts-row">
-          <!-- Debts will be rendered here -->
+      <!-- Obligations Section (Receivables + Liabilities) -->
+      <section class="section section-obligations" id="obligations-section" style="display: none;">
+        <div class="section-header">
+          <h2 class="section-title">Долги и обязательства</h2>
+          <div class="obligations-summary">
+            <span class="summary-positive" id="total-receivables">+₸0</span>
+            <span class="summary-negative" id="total-liabilities">−₸0</span>
+          </div>
         </div>
-      </section>
-
-      <!-- Owed Section (Assets) -->
-      <section class="section section-debts" id="owed-section" style="display: none;">
-        <h2 class="section-title">Мне должны</h2>
-        <div class="debts-row" id="owed-row">
-          <!-- Owed debts will be rendered here -->
+        <!-- Мне должны -->
+        <div class="obligations-group" id="receivables-group">
+          <h3 class="group-label positive">↑ Мне должны</h3>
+          <div class="obligations-row" id="receivables-row"></div>
+        </div>
+        <!-- Я должен -->
+        <div class="obligations-group" id="liabilities-group">
+          <h3 class="group-label negative">↓ Я должен</h3>
+          <div class="obligations-row" id="liabilities-row"></div>
         </div>
       </section>
 
@@ -164,6 +169,7 @@
         <button class="tab active" data-type="expense">Расход</button>
         <button class="tab" data-type="income">Доход</button>
         <button class="tab" data-type="transfer">Перевод</button>
+        <button class="tab" data-type="debt">Долг</button>
       </div>
 
       <form id="transaction-form">
@@ -192,6 +198,34 @@
         <div class="form-group" id="group-to-account" style="display: none;">
           <label class="form-label">Куда</label>
           <select class="form-select" id="input-to-account"></select>
+        </div>
+
+        <!-- Debt Form Fields -->
+        <div class="form-group" id="group-debt-direction" style="display: none;">
+          <label class="form-label">Направление</label>
+          <select class="form-select" id="input-debt-direction">
+            <option value="lend">Я дал</option>
+            <option value="collect">Мне вернули</option>
+            <option value="borrow">Я взял</option>
+            <option value="repay">Я вернул</option>
+          </select>
+        </div>
+
+        <div class="form-group" id="group-counterparty" style="display: none;">
+          <label class="form-label">Контрагент</label>
+          <input type="text" class="form-input" id="input-counterparty" list="counterparties-list"
+            placeholder="Имя или банк">
+          <datalist id="counterparties-list"></datalist>
+        </div>
+
+        <div class="form-group" id="group-counterparty-select" style="display: none;">
+          <label class="form-label">Кто</label>
+          <select class="form-select" id="input-counterparty-select"></select>
+        </div>
+
+        <div class="form-group" id="group-return-date" style="display: none;">
+          <label class="form-label">Дата возврата <span class="optional">(опц.)</span></label>
+          <input type="date" class="form-input" id="input-return-date">
         </div>
 
         <div class="form-group">

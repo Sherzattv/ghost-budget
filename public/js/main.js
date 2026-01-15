@@ -12,11 +12,11 @@
 // ─── Imports ───
 import { auth, accounts, categories } from './supabase/index.js';
 import { $, $$, showLoading, showError } from './utils.js';
-import { 
-    setUser, getUser, setAccounts, setCategories, 
-    setTransactionType, resetState 
+import {
+    setUser, getUser, setAccounts, setCategories,
+    setTransactionType, resetState
 } from './state.js';
-import { 
+import {
     renderAll, renderAccountsList, renderAnalytics,
     updateTransferSelects
 } from './ui/components.js';
@@ -24,11 +24,12 @@ import {
     handleAddTransaction, handleDeleteTransaction,
     handleAddAccount, handleDeleteAccount,
     handleModifyAccount, handleSaveAccountChanges,
-    handleTransactionTypeChange, updateTransactionForm
+    handleTransactionTypeChange, updateTransactionForm,
+    updateDebtFormFields
 } from './ui/forms.js';
-import { 
-    openModal, closeModal, 
-    setupModalOverlays, setupModalKeyboard 
+import {
+    openModal, closeModal,
+    setupModalOverlays, setupModalKeyboard
 } from './ui/modals.js';
 
 // ─── Auth Flow ───
@@ -121,7 +122,7 @@ async function loadData() {
  */
 function setupEventListeners() {
     // ─── Auth ───
-    
+
     // Auth tabs
     $$('#auth-tabs .tab').forEach(tab => {
         tab.addEventListener('click', () => {
@@ -210,6 +211,9 @@ function setupEventListeners() {
 
     // Transfer account mutual exclusion
     $('#input-from-account')?.addEventListener('change', updateTransferSelects);
+
+    // Debt direction change
+    $('#input-debt-direction')?.addEventListener('change', updateDebtFormFields);
 
     // Transaction delete (event delegation)
     $('#transactions')?.addEventListener('click', (e) => {

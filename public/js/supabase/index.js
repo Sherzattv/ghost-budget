@@ -8,3 +8,5 @@ export * as auth from './auth.js';
 export * as accounts from './accounts.js';
 export * as transactions from './transactions.js';
 export * as categories from './categories.js';
+export * as debts from './debts.js';
+

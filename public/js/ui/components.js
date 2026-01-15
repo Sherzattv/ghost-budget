@@ -1,18 +1,29 @@
 /**
  * Ghost Budget — UI Components
- * Render functions for accounts, transactions, analytics
+ * Render functions for accounts, transactions, analytics, obligations
+ * 
+ * New Architecture:
+ * - renderObligations() replaces old renderDebts()
+ * - Supports receivable/liability account types
  */
 
 import { $, formatMoney, formatDate } from '../utils.js';
-import { 
-    getAssetAccounts, 
-    getActiveDebts, 
+import {
+    getAssetAccounts,
+    getActiveReceivables,
+    getActiveLiabilities,
     getCreditAccount,
     getOwnBalance,
     getCreditBalance,
+    getTotalReceivables,
+    getTotalLiabilities,
+    getNetPosition,
+    hasActiveObligations,
+    getOverdueObligations,
     getAccounts,
     getCategoriesByType,
-    getTransactionType
+    getTransactionType,
+    getCounterparties
 } from '../state.js';
 import { transactions } from '../supabase/index.js';
 
@@ -54,51 +65,117 @@ export function renderAccounts() {
     $('#credit-balance').textContent = formatMoney(getCreditBalance());
 }
 
+// ─── Obligations (NEW) ───
+
 /**
- * Render debts section
+ * Render obligations section (receivables + liabilities)
+ * Replaces old renderDebts()
  */
-export function renderDebts() {
-    const debtsSection = $('#debts-section');
-    const owedSection = $('#owed-section');
-    const debtsRow = $('#debts-row');
+export function renderObligations() {
+    const section = $('#obligations-section');
+    const receivablesRow = $('#receivables-row');
+    const liabilitiesRow = $('#liabilities-row');
+    const receivablesGroup = $('#receivables-group');
+    const liabilitiesGroup = $('#liabilities-group');
 
-    if (!debtsSection || !debtsRow) return;
+    if (!section) return;
 
-    // Regular Debts (My liabilities)
-    const myDebts = getActiveDebts();
-    let myDebtsHtml = myDebts.map(debt => `
-        <div class="debt-item">
-            <span class="debt-name">${debt.name}:</span>
-            <span class="debt-amount">${formatMoney(Math.abs(debt.balance))}</span>
-        </div>
-    `).join('');
+    const receivables = getActiveReceivables();
+    const liabilities = getActiveLiabilities();
+    const overdueList = getOverdueObligations();
 
-    // Add Credit Card (My Portion)
-    const creditAccount = getCreditAccount();
-    if (creditAccount) {
-        const debt = creditAccount.credit_limit - creditAccount.balance;
-        if (debt > 50) {
-            myDebtsHtml += `
-                <div class="debt-item">
-                    <span class="debt-name">Кредитка:</span>
-                    <span class="debt-amount">${formatMoney(debt)}</span>
-                </div>
-            `;
+    // Update summary totals
+    const totalReceivablesEl = $('#total-receivables');
+    const totalLiabilitiesEl = $('#total-liabilities');
+
+    if (totalReceivablesEl) {
+        totalReceivablesEl.textContent = `+${formatMoney(getTotalReceivables())}`;
+    }
+    if (totalLiabilitiesEl) {
+        totalLiabilitiesEl.textContent = `−${formatMoney(getTotalLiabilities())}`;
+    }
+
+    // Hide section if no obligations
+    if (!hasActiveObligations()) {
+        section.style.display = 'none';
+        return;
+    }
+    section.style.display = 'block';
+
+    // Render receivables (мне должны)
+    if (receivablesRow && receivablesGroup) {
+        if (receivables.length === 0) {
+            receivablesGroup.style.display = 'none';
+        } else {
+            receivablesGroup.style.display = 'block';
+            receivablesRow.innerHTML = receivables.map(acc =>
+                renderObligationCard(acc, overdueList)
+            ).join('');
         }
     }
 
-    // Render My Debts Section
-    if (!myDebtsHtml) {
-        debtsSection.style.display = 'none';
-    } else {
-        debtsSection.style.display = 'block';
-        debtsRow.innerHTML = myDebtsHtml;
+    // Render liabilities (я должен)
+    if (liabilitiesRow && liabilitiesGroup) {
+        if (liabilities.length === 0) {
+            liabilitiesGroup.style.display = 'none';
+        } else {
+            liabilitiesGroup.style.display = 'block';
+            liabilitiesRow.innerHTML = liabilities.map(acc =>
+                renderObligationCard(acc, overdueList)
+            ).join('');
+        }
+    }
+}
+
+/**
+ * Render single obligation card
+ * @param {Object} account - receivable or liability account
+ * @param {Array} overdueList - list of overdue accounts
+ * @returns {string} HTML
+ */
+function renderObligationCard(account, overdueList = []) {
+    const isOverdue = overdueList.some(o => o.id === account.id);
+    const isReceivable = account.type === 'receivable';
+
+    let statusClass = isReceivable ? 'positive' : 'negative';
+    if (isOverdue) statusClass = 'overdue';
+
+    const displayName = account.counterparty || account.name;
+    const displayBalance = isReceivable
+        ? `+${formatMoney(account.balance)}`
+        : `−${formatMoney(Math.abs(account.balance))}`;
+
+    const arrow = isReceivable ? '↑' : '↓';
+
+    let metaInfo = '';
+    if (account.expected_return_date) {
+        metaInfo = formatDate(account.expected_return_date);
+    }
+    if (isOverdue) {
+        metaInfo += ' <span class="status-overdue">просрочен</span>';
+    }
+    if (account.obligation_kind && account.obligation_kind !== 'person') {
+        const kindLabels = {
+            'credit': 'кредит',
+            'installment': 'рассрочка',
+            'credit_card': 'кредитка'
+        };
+        metaInfo += ` <span class="obligation-kind">${kindLabels[account.obligation_kind] || account.obligation_kind}</span>`;
     }
 
-    // Hide owed section for now
-    if (owedSection) {
-        owedSection.style.display = 'none';
-    }
+    return `
+        <div class="obligation-card ${statusClass}" data-id="${account.id}">
+            <div class="card-main">
+                <div class="card-left">
+                    <span class="card-arrow ${isReceivable ? 'up' : 'down'}">${arrow}</span>
+                    <span class="card-name">${displayName}</span>
+                </div>
+                <span class="card-amount">${displayBalance}</span>
+            </div>
+            ${metaInfo ? `<div class="card-meta">${metaInfo}</div>` : ''}
+            <button class="card-action" data-id="${account.id}" data-type="${account.type}" title="Возврат">+</button>
+        </div>
+    `;
 }
 
 // ─── Analytics ───
@@ -172,15 +249,34 @@ export async function renderTransactions() {
     container.innerHTML = recent.map(t => {
         let info, amount, amountClass, accountInfo;
 
-        if (t.type === 'transfer') {
-            const fromName = t.from_account?.name || '?';
-            const toName = t.to_account?.name || '?';
+        if (t.type === 'transfer' || t.type === 'debt_op') {
+            const fromName = t.from_account?.name || t.debt_counterparty || '?';
+            const toName = t.to_account?.name || t.debt_counterparty || '?';
 
-            if (t.to_account?.type === 'debt') {
-                info = `${fromName} → ${toName}`;
-                amount = '-' + formatMoney(t.amount);
-                amountClass = 'expense';
-                accountInfo = 'погашение';
+            // Determine display based on debt direction
+            if (t.is_debt && t.debt_direction) {
+                const directionLabels = {
+                    'lent': 'дал в долг',
+                    'borrowed': 'занял',
+                    'return': 'возврат',
+                    'payment': 'погашение',
+                    'forgive': 'списано',
+                    'interest': 'проценты'
+                };
+                info = `${t.debt_counterparty || fromName} → ${toName}`;
+                accountInfo = directionLabels[t.debt_direction] || 'долг';
+
+                // Color based on direction
+                if (['lent', 'payment'].includes(t.debt_direction)) {
+                    amount = '-' + formatMoney(t.amount);
+                    amountClass = 'expense';
+                } else if (['borrowed', 'return'].includes(t.debt_direction)) {
+                    amount = '+' + formatMoney(t.amount);
+                    amountClass = 'income';
+                } else {
+                    amount = formatMoney(t.amount);
+                    amountClass = 'transfer';
+                }
             } else {
                 info = `${fromName} → ${toName}`;
                 amount = formatMoney(t.amount);
@@ -216,7 +312,7 @@ export async function renderTransactions() {
  */
 export function renderAccountOptions() {
     const allAccounts = getAccounts();
-    const assets = allAccounts.filter(a => a.type !== 'debt');
+    const assets = allAccounts.filter(a => a.type === 'asset' || a.type === 'savings');
 
     const assetOptions = assets.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
 
@@ -246,7 +342,9 @@ export function updateTransferSelects() {
     const toOptions = allAccounts
         .filter(a => a.id !== selectedFromId)
         .map(a => {
-            const label = a.type === 'debt' ? `${a.name} (долг)` : a.name;
+            let label = a.name;
+            if (a.type === 'liability') label = `${a.counterparty || a.name} (долг)`;
+            if (a.type === 'receivable') label = `${a.counterparty || a.name} (мне должны)`;
             return `<option value="${a.id}">${label}</option>`;
         })
         .join('');
@@ -264,10 +362,21 @@ export function updateTransferSelects() {
  */
 export function renderCategoriesList() {
     const transactionType = getTransactionType();
-    const cats = getCategoriesByType(transactionType);
+    const cats = getCategoriesByType(transactionType === 'debt' ? 'expense' : transactionType);
     const datalist = $('#categories-list');
     if (datalist) {
         datalist.innerHTML = cats.map(c => `<option value="${c.name}">`).join('');
+    }
+}
+
+/**
+ * Render counterparties datalist
+ */
+export function renderCounterpartiesList() {
+    const counterparties = getCounterparties();
+    const datalist = $('#counterparties-list');
+    if (datalist) {
+        datalist.innerHTML = counterparties.map(c => `<option value="${c}">`).join('');
     }
 }
 
@@ -280,18 +389,31 @@ export function renderAccountsList() {
 
     const allAccounts = getAccounts();
 
-    list.innerHTML = allAccounts.map(account => `
-        <div class="account-list-item">
-            <span class="account-name">${account.name}</span>
-            <div class="account-actions">
-                <span class="account-balance ${account.balance >= 0 ? 'positive' : 'negative'}">
-                    ${formatMoney(account.balance)}
-                </span>
-                <button class="btn btn-ghost btn-sm edit-account-btn" data-id="${account.id}" title="Редактировать">✎</button>
-                <button class="btn btn-ghost btn-sm btn-danger delete-account-btn" data-id="${account.id}" title="Удалить">×</button>
+    list.innerHTML = allAccounts.map(account => {
+        const typeLabels = {
+            'asset': 'актив',
+            'savings': 'накопления',
+            'receivable': 'мне должны',
+            'liability': 'я должен'
+        };
+        const typeLabel = typeLabels[account.type] || account.type;
+
+        return `
+            <div class="account-list-item">
+                <div class="account-list-info">
+                    <span class="account-name">${account.counterparty || account.name}</span>
+                    <span class="account-type-label">${typeLabel}</span>
+                </div>
+                <div class="account-actions">
+                    <span class="account-balance ${account.balance >= 0 ? 'positive' : 'negative'}">
+                        ${formatMoney(account.balance)}
+                    </span>
+                    <button class="btn btn-ghost btn-sm edit-account-btn" data-id="${account.id}" title="Редактировать">✎</button>
+                    <button class="btn btn-ghost btn-sm btn-danger delete-account-btn" data-id="${account.id}" title="Удалить">×</button>
+                </div>
             </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 // ─── Render All ───
@@ -301,9 +423,10 @@ export function renderAccountsList() {
  */
 export async function renderAll() {
     renderAccounts();
-    renderDebts();
+    renderObligations();
     await renderAnalytics();
     await renderTransactions();
     renderAccountOptions();
     renderCategoriesList();
+    renderCounterpartiesList();
 }
