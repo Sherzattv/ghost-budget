@@ -66,7 +66,7 @@ export async function handleAddTransaction(e) {
 
     // Validate transfer: accounts must be different
     if (currentType === 'transfer' && fromAccountId === toAccountId) {
-        alert('Нельзя переводить на тот же счёт');
+        console.error('Попытка перевода на тот же счёт');
         $('#input-to-account').focus();
         return;
     }
@@ -98,7 +98,7 @@ export async function handleAddTransaction(e) {
         });
 
         if (error) {
-            alert(error.message);
+            console.error('Transaction error:', error.message);
             showLoading(false);
             return;
         }
@@ -116,7 +116,6 @@ export async function handleAddTransaction(e) {
         }
     } catch (error) {
         console.error('Error adding transaction:', error);
-        alert('Ошибка при добавлении транзакции');
     }
 
     showLoading(false);
@@ -212,13 +211,13 @@ async function handleDebtOperation(e) {
                 break;
 
             default:
-                alert('Неизвестное направление операции');
+                console.error('Unknown debt direction');
                 showLoading(false);
                 return;
         }
 
         if (result?.error) {
-            alert(result.error.message);
+            console.error('Debt operation error:', result.error.message);
             showLoading(false);
             return;
         }
@@ -236,7 +235,6 @@ async function handleDebtOperation(e) {
         }
     } catch (error) {
         console.error('Error with debt operation:', error);
-        alert('Ошибка при выполнении операции');
     }
 
     showLoading(false);
@@ -247,14 +245,12 @@ async function handleDebtOperation(e) {
  * @param {string} id - Transaction ID
  */
 export async function handleDeleteTransaction(id) {
-    if (!confirm('Удалить транзакцию?')) return;
-
     showLoading(true);
 
     const { error } = await transactions.deleteTransaction(id);
 
     if (error) {
-        alert(error.message);
+        console.error('Delete transaction error:', error.message);
     } else {
         // Reload accounts
         const updatedAccounts = await accounts.getAccounts({ includeHidden: true });
@@ -454,7 +450,7 @@ export async function handleAddAccount(e) {
     const { data, error } = await accounts.createAccount({ name, balance, type });
 
     if (error) {
-        alert(error.message);
+        console.error('Add account error:', error.message);
     } else {
         addAccount(data);
 
@@ -475,14 +471,12 @@ export async function handleAddAccount(e) {
  * @param {string} id - Account ID
  */
 export async function handleDeleteAccount(id) {
-    if (!confirm('Удалить счёт?')) return;
-
     showLoading(true);
 
     const { error } = await accounts.deleteAccount(id);
 
     if (error) {
-        alert(error.message);
+        console.error('Delete account error:', error.message);
     } else {
         removeAccount(id);
         renderAccountsList();
@@ -536,17 +530,9 @@ export async function handleSaveAccountChanges(e) {
         return;
     }
 
-    // Confirm balance change
-    const oldAccount = getAccountById(id);
-    if (oldAccount && Math.abs(balance - oldAccount.balance) > 0.01) {
-        const confirmed = confirm(
-            `Изменить баланс "${oldAccount.counterparty || oldAccount.name}"?\n\n` +
-            `Было: ${formatMoney(oldAccount.balance)}\n` +
-            `Станет: ${formatMoney(balance)}\n\n` +
-            `Разница: ${formatMoney(balance - oldAccount.balance, true)}`
-        );
-        if (!confirmed) return;
-    }
+    // Confirm balance change (skip for now)
+    // const oldAccount = getAccountById(id);
+    // Balance change happens without confirmation
 
     showLoading(true);
 
@@ -565,7 +551,7 @@ export async function handleSaveAccountChanges(e) {
     const { data, error } = await accounts.updateAccount(id, updates);
 
     if (error) {
-        alert(error.message);
+        console.error('Update account error:', error.message);
     } else {
         updateAccountInCache(id, data);
 
@@ -593,7 +579,7 @@ function showValidationError(selector, message) {
         // Could add visual error state here
     }
     if (message) {
-        alert(message);
+        console.warn('Validation:', message);
     }
 }
 

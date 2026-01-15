@@ -171,7 +171,7 @@ function setupEventListeners() {
             showError('register-error', error.message);
         } else {
             showError('register-error', '');
-            alert('Проверь email для подтверждения регистрации');
+            console.log('Registration successful - check email');
         }
         showLoading(false);
     });
