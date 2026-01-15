@@ -25,7 +25,7 @@ import {
     handleAddAccount, handleDeleteAccount,
     handleModifyAccount, handleSaveAccountChanges,
     handleTransactionTypeChange, updateTransactionForm,
-    updateDebtFormFields
+    handleDebtActionClick, handleDebtTypeChange, handleCreditToggleClick
 } from './ui/forms.js';
 import {
     openModal, closeModal,
@@ -212,8 +212,26 @@ function setupEventListeners() {
     // Transfer account mutual exclusion
     $('#input-from-account')?.addEventListener('change', updateTransferSelects);
 
-    // Debt direction change
-    $('#input-debt-direction')?.addEventListener('change', updateDebtFormFields);
+    // Debt action buttons (event delegation)
+    document.querySelector('.debt-action-buttons')?.addEventListener('click', (e) => {
+        const btn = e.target.closest('.debt-action-btn');
+        if (btn) {
+            handleDebtActionClick(btn.dataset.action);
+        }
+    });
+
+    // Debt type radio change
+    document.querySelectorAll('input[name="debt-type"]').forEach(radio => {
+        radio.addEventListener('change', handleDebtTypeChange);
+    });
+
+    // Credit/Installment toggle (event delegation)
+    document.querySelector('.toggle-group')?.addEventListener('click', (e) => {
+        const btn = e.target.closest('.toggle-btn');
+        if (btn) {
+            handleCreditToggleClick(btn.dataset.creditType);
+        }
+    });
 
     // Transaction delete (event delegation)
     $('#transactions')?.addEventListener('click', (e) => {

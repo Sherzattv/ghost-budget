@@ -287,83 +287,147 @@ export function updateTransactionForm() {
 
     // Standard fields
     $('#group-category').style.display = (isTransfer || isDebt) ? 'none' : 'block';
-    $('#group-account').style.display = isTransfer ? 'none' : 'block';
+    $('#group-account').style.display = (isTransfer || isDebt) ? 'none' : 'block';
     $('#group-from-account').style.display = isTransfer ? 'block' : 'none';
     $('#group-to-account').style.display = isTransfer ? 'block' : 'none';
 
-    // Debt fields
-    $('#group-debt-direction').style.display = isDebt ? 'block' : 'none';
+    // Debt fields - show action buttons only
+    $('#group-debt-action').style.display = isDebt ? 'block' : 'none';
+    $('#group-debt-type').style.display = 'none';
+    $('#group-credit-toggle').style.display = 'none';
     $('#group-counterparty').style.display = 'none';
-    $('#group-counterparty-select').style.display = 'none';
+    $('#group-monthly-payment').style.display = 'none';
+    $('#group-payment-day').style.display = 'none';
+    $('#group-interest-rate').style.display = 'none';
     $('#group-return-date').style.display = 'none';
 
+    // Reset debt action selection
     if (isDebt) {
-        updateDebtFormFields();
+        resetDebtForm();
     }
 
     renderCategoriesList();
 }
 
 /**
- * Update debt form fields based on direction
+ * Reset debt form to initial state
+ */
+function resetDebtForm() {
+    // Clear action selection
+    document.querySelectorAll('.debt-action-btn').forEach(btn => btn.classList.remove('active'));
+    $('#input-debt-action').value = '';
+
+    // Reset radio
+    const personRadio = document.querySelector('input[name="debt-type"][value="person"]');
+    if (personRadio) personRadio.checked = true;
+
+    // Reset toggle
+    document.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelector('.toggle-btn[data-credit-type="credit"]')?.classList.add('active');
+}
+
+/**
+ * Handle debt action button click (Я дал / Я взял)
+ */
+export function handleDebtActionClick(action) {
+    // Update hidden input
+    $('#input-debt-action').value = action;
+
+    // Update button states
+    document.querySelectorAll('.debt-action-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.action === action);
+    });
+
+    // Show/hide conditional fields based on action
+    updateDebtFormFields();
+}
+
+/**
+ * Update debt form fields based on action and type
  */
 export function updateDebtFormFields() {
-    const direction = $('#input-debt-direction')?.value;
+    const action = $('#input-debt-action')?.value;
+    const debtType = document.querySelector('input[name="debt-type"]:checked')?.value || 'person';
+    const creditType = document.querySelector('.toggle-btn.active')?.dataset.creditType || 'credit';
 
-    // lend/borrow: show counterparty input field
-    // collect/repay: show counterparty select dropdown
-    const needsCounterpartyName = ['lend', 'borrow'].includes(direction);
-    const needsCounterpartySelect = ['collect', 'repay'].includes(direction);
-
-    $('#group-counterparty').style.display = needsCounterpartyName ? 'block' : 'none';
-    $('#group-counterparty-select').style.display = needsCounterpartySelect ? 'block' : 'none';
-    $('#group-return-date').style.display = needsCounterpartyName ? 'block' : 'none';
-
-    // Update account label
-    const accountLabel = $('#group-account')?.querySelector('.form-label');
-    if (accountLabel) {
-        if (['lend', 'repay'].includes(direction)) {
-            accountLabel.textContent = 'Откуда';
-        } else {
-            accountLabel.textContent = 'Куда';
-        }
+    if (!action) {
+        // No action selected yet - hide all fields
+        $('#group-debt-type').style.display = 'none';
+        $('#group-credit-toggle').style.display = 'none';
+        $('#group-counterparty').style.display = 'none';
+        $('#group-account').style.display = 'none';
+        $('#group-monthly-payment').style.display = 'none';
+        $('#group-payment-day').style.display = 'none';
+        $('#group-interest-rate').style.display = 'none';
+        $('#group-return-date').style.display = 'none';
+        return;
     }
 
-    // Populate counterparty select for collect/repay
-    if (needsCounterpartySelect) {
-        populateCounterpartySelect(direction);
+    // Show account field with appropriate label
+    $('#group-account').style.display = 'block';
+    const accountLabel = $('#group-account')?.querySelector('.form-label');
+    if (accountLabel) {
+        accountLabel.textContent = action === 'lend' ? 'Откуда' : 'Куда';
+    }
+
+    // Show counterparty field with appropriate label
+    $('#group-counterparty').style.display = 'block';
+    const counterpartyLabel = $('#label-counterparty');
+    if (counterpartyLabel) {
+        counterpartyLabel.textContent = action === 'lend' ? 'Кому' : 'У кого';
+    }
+
+    // Populate counterparty autocomplete
+    renderCounterpartiesList();
+
+    if (action === 'lend') {
+        // "Я дал" - simple form, no type selection
+        $('#group-debt-type').style.display = 'none';
+        $('#group-credit-toggle').style.display = 'none';
+        $('#group-monthly-payment').style.display = 'none';
+        $('#group-payment-day').style.display = 'none';
+        $('#group-interest-rate').style.display = 'none';
+        $('#group-return-date').style.display = 'block';
+    } else if (action === 'borrow') {
+        // "Я взял" - show type selection
+        $('#group-debt-type').style.display = 'block';
+        $('#group-return-date').style.display = debtType === 'person' ? 'block' : 'none';
+
+        if (debtType === 'person') {
+            // Person - simple form
+            $('#group-credit-toggle').style.display = 'none';
+            $('#group-monthly-payment').style.display = 'none';
+            $('#group-payment-day').style.display = 'none';
+            $('#group-interest-rate').style.display = 'none';
+        } else if (debtType === 'credit') {
+            // Credit/Installment - show toggle and fields
+            $('#group-credit-toggle').style.display = 'block';
+            $('#group-monthly-payment').style.display = 'block';
+            $('#group-payment-day').style.display = 'block';
+            // Interest rate only for credit, not installment
+            $('#group-interest-rate').style.display = creditType === 'credit' ? 'block' : 'none';
+        }
     }
 }
 
 /**
- * Populate counterparty select based on direction
- * @param {string} direction - 'collect' or 'repay'
+ * Handle debt type radio change
  */
-function populateCounterpartySelect(direction) {
-    const select = $('#input-counterparty-select');
-    if (!select) return;
+export function handleDebtTypeChange() {
+    updateDebtFormFields();
+}
 
-    let counterpartyAccounts;
+/**
+ * Handle credit/installment toggle click
+ */
+export function handleCreditToggleClick(creditType) {
+    // Update toggle states
+    document.querySelectorAll('.toggle-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.creditType === creditType);
+    });
 
-    if (direction === 'collect') {
-        // Мне вернули - show receivables (мне должны)
-        counterpartyAccounts = getActiveReceivables();
-    } else if (direction === 'repay') {
-        // Я вернул - show liabilities (я должен)
-        counterpartyAccounts = getActiveLiabilities();
-    } else {
-        counterpartyAccounts = [];
-    }
-
-    if (counterpartyAccounts.length === 0) {
-        select.innerHTML = '<option value="">Нет активных долгов</option>';
-    } else {
-        select.innerHTML = counterpartyAccounts.map(acc => {
-            const name = acc.counterparty || acc.name;
-            const balance = formatMoney(Math.abs(acc.balance));
-            return `<option value="${acc.id}">${name} (${balance})</option>`;
-        }).join('');
-    }
+    // Update form fields
+    updateDebtFormFields();
 }
 
 // ─── Account Forms ───

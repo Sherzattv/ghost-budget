@@ -201,30 +201,72 @@
         </div>
 
         <!-- Debt Form Fields -->
-        <div class="form-group" id="group-debt-direction" style="display: none;">
-          <label class="form-label">Направление</label>
-          <select class="form-select" id="input-debt-direction">
-            <option value="lend">Я дал</option>
-            <option value="collect">Мне вернули</option>
-            <option value="borrow">Я взял</option>
-            <option value="repay">Я вернул</option>
-          </select>
+        <!-- Step 1: Operation buttons -->
+        <div class="form-group" id="group-debt-action" style="display: none;">
+          <label class="form-label">Что произошло?</label>
+          <div class="debt-action-buttons">
+            <button type="button" class="debt-action-btn" data-action="lend">
+              <span class="action-icon">💸</span>
+              <span class="action-text">Я дал</span>
+            </button>
+            <button type="button" class="debt-action-btn" data-action="borrow">
+              <span class="action-icon">💰</span>
+              <span class="action-text">Я взял</span>
+            </button>
+          </div>
+          <input type="hidden" id="input-debt-action" value="">
         </div>
 
+        <!-- Step 2: Debt type (only for "borrow") -->
+        <div class="form-group" id="group-debt-type" style="display: none;">
+          <label class="form-label">Тип</label>
+          <div class="radio-group">
+            <label class="radio-option">
+              <input type="radio" name="debt-type" value="person" checked>
+              <span>Человек</span>
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="debt-type" value="credit">
+              <span>Кредит/Рассрочка</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Step 3: Credit/Installment toggle -->
+        <div class="form-group" id="group-credit-toggle" style="display: none;">
+          <div class="toggle-group">
+            <button type="button" class="toggle-btn active" data-credit-type="credit">Кредит</button>
+            <button type="button" class="toggle-btn" data-credit-type="installment">Рассрочка</button>
+          </div>
+        </div>
+
+        <!-- Counterparty input (autocomplete from history) -->
         <div class="form-group" id="group-counterparty" style="display: none;">
-          <label class="form-label">Контрагент</label>
+          <label class="form-label" id="label-counterparty">Кому</label>
           <input type="text" class="form-input" id="input-counterparty" list="counterparties-list"
             placeholder="Имя или банк">
           <datalist id="counterparties-list"></datalist>
         </div>
 
-        <div class="form-group" id="group-counterparty-select" style="display: none;">
-          <label class="form-label">Кто</label>
-          <select class="form-select" id="input-counterparty-select"></select>
+        <!-- Credit-specific fields -->
+        <div class="form-group" id="group-monthly-payment" style="display: none;">
+          <label class="form-label">Платёж/мес <span class="optional">(опц.)</span></label>
+          <input type="number" class="form-input" id="input-monthly-payment" placeholder="0">
         </div>
 
+        <div class="form-group" id="group-payment-day" style="display: none;">
+          <label class="form-label">День платежа <span class="optional">(1-28)</span></label>
+          <input type="number" class="form-input" id="input-payment-day" min="1" max="28" placeholder="15">
+        </div>
+
+        <div class="form-group" id="group-interest-rate" style="display: none;">
+          <label class="form-label">% годовых <span class="optional">(опц.)</span></label>
+          <input type="number" class="form-input" id="input-interest-rate" step="0.1" placeholder="0">
+        </div>
+
+        <!-- Return date -->
         <div class="form-group" id="group-return-date" style="display: none;">
-          <label class="form-label">Дата возврата <span class="optional">(опц.)</span></label>
+          <label class="form-label">Вернуть до <span class="optional">(опц.)</span></label>
           <input type="date" class="form-input" id="input-return-date">
         </div>
 
