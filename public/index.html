@@ -201,7 +201,7 @@
         </div>
 
         <!-- Debt Form Fields -->
-        <!-- Step 1: Operation buttons -->
+        <!-- Step 1: Operation buttons (2x2 grid) -->
         <div class="form-group" id="group-debt-action" style="display: none;">
           <label class="form-label">Что произошло?</label>
           <div class="debt-action-buttons">
@@ -212,6 +212,14 @@
             <button type="button" class="debt-action-btn" data-action="borrow">
               <span class="action-icon">💰</span>
               <span class="action-text">Я взял</span>
+            </button>
+            <button type="button" class="debt-action-btn" data-action="collect">
+              <span class="action-icon">✅</span>
+              <span class="action-text">Мне вернули</span>
+            </button>
+            <button type="button" class="debt-action-btn" data-action="repay">
+              <span class="action-icon">↩️</span>
+              <span class="action-text">Я вернул</span>
             </button>
           </div>
           <input type="hidden" id="input-debt-action" value="">
@@ -246,6 +254,12 @@
           <input type="text" class="form-input" id="input-counterparty" list="counterparties-list"
             placeholder="Имя или банк">
           <datalist id="counterparties-list"></datalist>
+        </div>
+
+        <!-- Counterparty select (for collect/repay) -->
+        <div class="form-group" id="group-counterparty-select" style="display: none;">
+          <label class="form-label" id="label-counterparty-select">Кто</label>
+          <select class="form-select" id="input-counterparty-select"></select>
         </div>
 
         <!-- Credit-specific fields -->

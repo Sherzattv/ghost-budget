@@ -1367,6 +1367,16 @@ body {
   background: rgba(239, 68, 68, 0.1);
 }
 
+.debt-action-btn[data-action="collect"].active {
+  border-color: var(--income);
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.debt-action-btn[data-action="repay"].active {
+  border-color: var(--accent);
+  background: var(--accent-light);
+}
+
 .action-icon {
   font-size: 1.5rem;
 }
