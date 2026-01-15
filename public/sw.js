@@ -3,7 +3,7 @@
  * Optimized for Supabase architecture
  */
 
-const CACHE_NAME = 'ghost-budget-v2.1-refactored';
+const CACHE_NAME = 'ghost-budget-v2.3-name-fix';
 const STATIC_ASSETS = [
     '/',
     '/index.html',

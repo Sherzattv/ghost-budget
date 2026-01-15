@@ -294,7 +294,7 @@ export function getNetPosition() {
  * @returns {Object|undefined}
  */
 export function getCreditAccount() {
-    return accountsCache.find(a => a.credit_limit && a.type === 'liability');
+    return accountsCache.find(a => a.credit_limit && a.type === 'asset');
 }
 
 // ─── Computed State: Obligations ───
