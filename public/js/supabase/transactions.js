@@ -149,41 +149,60 @@ export async function deleteTransaction(id) {
 
 /**
  * Get expense analytics grouped by category
+ * Uses RPC function for optimized server-side grouping
  * @param {Object} options - { startDate?, endDate? }
  * @returns {Promise<Array<{category_name: string, total: number}>>}
  */
 export async function getExpenseAnalytics(options = {}) {
-    let query = supabase
-        .from('transactions')
-        .select(`
-            amount,
-            category:categories(name)
-        `)
-        .eq('type', 'expense');
-
-    if (options.startDate) {
-        query = query.gte('date', options.startDate);
-    }
-
-    if (options.endDate) {
-        query = query.lte('date', options.endDate);
-    }
-
-    const { data, error } = await query;
+    const { data, error } = await supabase.rpc('get_expense_analytics', {
+        start_date: options.startDate || null,
+        end_date: options.endDate || null
+    });
 
     if (error) {
-        console.error('Error fetching analytics:', error);
+        console.error('Error fetching expense analytics:', error);
         return [];
     }
 
-    // Group by category manually (could be optimized with RPC function)
-    const grouped = {};
-    (data || []).forEach(t => {
-        const categoryName = t.category?.name || 'Другое';
-        grouped[categoryName] = (grouped[categoryName] || 0) + Number(t.amount);
+    return data || [];
+}
+
+/**
+ * Get income analytics grouped by category
+ * Uses RPC function for optimized server-side grouping
+ * @param {Object} options - { startDate?, endDate? }
+ * @returns {Promise<Array<{category_name: string, total: number}>>}
+ */
+export async function getIncomeAnalytics(options = {}) {
+    const { data, error } = await supabase.rpc('get_income_analytics', {
+        start_date: options.startDate || null,
+        end_date: options.endDate || null
     });
 
-    return Object.entries(grouped)
-        .map(([category_name, total]) => ({ category_name, total }))
-        .sort((a, b) => b.total - a.total);
+    if (error) {
+        console.error('Error fetching income analytics:', error);
+        return [];
+    }
+
+    return data || [];
+}
+
+/**
+ * Get period summary (totals for income, expense, net balance)
+ * Uses RPC function for optimized server-side calculation
+ * @param {Object} options - { startDate?, endDate? }
+ * @returns {Promise<{total_income: number, total_expense: number, net_balance: number, transaction_count: number}|null>}
+ */
+export async function getPeriodSummary(options = {}) {
+    const { data, error } = await supabase.rpc('get_period_summary', {
+        start_date: options.startDate || null,
+        end_date: options.endDate || null
+    });
+
+    if (error) {
+        console.error('Error fetching period summary:', error);
+        return null;
+    }
+
+    return data?.[0] || null;
 }

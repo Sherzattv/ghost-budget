@@ -3,13 +3,19 @@
  * Optimized for Supabase architecture
  */
 
-const CACHE_NAME = 'ghost-budget-v2-supabase';
+const CACHE_NAME = 'ghost-budget-v2.1-refactored';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
     '/style.css',
     '/js/main.js',
     '/js/config.js',
+    '/js/utils.js',
+    '/js/state.js',
+    '/js/ui/index.js',
+    '/js/ui/components.js',
+    '/js/ui/forms.js',
+    '/js/ui/modals.js',
     '/js/supabase/client.js',
     '/js/supabase/auth.js',
     '/js/supabase/accounts.js',
