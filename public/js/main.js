@@ -261,8 +261,8 @@ function setupEventListeners() {
         tab.classList.add('active');
 
         const isActive = tab.dataset.tab === 'active';
-        $('#accounts-list').style.display = isActive ? 'block' : 'none';
-        $('#archived-accounts-list').style.display = isActive ? 'none' : 'block';
+        $('#accounts-list').style.display = isActive ? 'flex' : 'none';
+        $('#archived-accounts-list').style.display = isActive ? 'none' : 'flex';
     });
 
     // Unarchive account (event delegation on archived list)
@@ -324,13 +324,11 @@ function setupEventListeners() {
                 }
             });
 
-            // Smart direction: check if dropdown would overflow modal
+            // Smart direction: check if there's space below
             if (!dropdown.classList.contains('open')) {
                 const btn = e.target;
-                const modal = btn.closest('.modal');
                 const btnRect = btn.getBoundingClientRect();
-                const modalRect = modal?.getBoundingClientRect() || { bottom: window.innerHeight };
-                const spaceBelow = modalRect.bottom - btnRect.bottom;
+                const spaceBelow = window.innerHeight - btnRect.bottom;
 
                 // If less than 150px below, open upward
                 dropdown.classList.toggle('dropdown-up', spaceBelow < 150);

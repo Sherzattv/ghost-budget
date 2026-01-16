@@ -708,10 +708,25 @@ body {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
-  max-height: 250px;
+  max-height: 300px;
+  overflow: visible;
+  /* Allow dropdown to overflow */
+  padding-bottom: var(--spacing-lg);
+  min-height: 60px;
+}
+
+/* Wrapper handles scrolling while allowing dropdown overflow */
+.modal-body {
+  max-height: 70vh;
   overflow-y: auto;
   overflow-x: visible;
-  padding-bottom: var(--spacing-lg);
+}
+
+.empty-state {
+  padding: var(--spacing-lg);
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.9rem;
 }
 
 .account-list-item {
