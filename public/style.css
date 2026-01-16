@@ -408,7 +408,7 @@ body {
 
 .transaction {
   display: grid;
-  grid-template-columns: 50px 1fr auto auto 24px;
+  grid-template-columns: 50px 1fr auto auto 56px;
   gap: var(--spacing-md);
   align-items: center;
   padding: var(--spacing-sm) var(--spacing-md);
