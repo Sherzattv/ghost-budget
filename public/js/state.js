@@ -53,6 +53,22 @@ export function getAccounts() {
 }
 
 /**
+ * Get active (non-hidden) accounts
+ * @returns {Array}
+ */
+export function getActiveAccounts() {
+    return accountsCache.filter(a => !a.is_hidden);
+}
+
+/**
+ * Get archived (hidden) accounts
+ * @returns {Array}
+ */
+export function getArchivedAccounts() {
+    return accountsCache.filter(a => a.is_hidden);
+}
+
+/**
  * Get cached account by ID
  * @param {string} id - Account ID
  * @returns {Object|undefined}
@@ -291,9 +307,9 @@ export function getTotalReceivables() {
  * @returns {number}
  */
 export function getTotalLiabilities() {
-    // Personal debts
+    // Personal debts (exclude hidden)
     const personalDebts = accountsCache
-        .filter(a => a.type === 'liability')
+        .filter(a => a.type === 'liability' && !a.is_hidden)
         .reduce((sum, a) => sum + Math.abs(Math.min(0, Number(a.balance))), 0);
 
     // Credit card debts (credit_limit - balance)

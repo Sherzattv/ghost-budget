@@ -21,6 +21,8 @@ import {
     hasActiveObligations,
     getOverdueObligations,
     getAccounts,
+    getActiveAccounts,
+    getArchivedAccounts,
     getCategoriesByType,
     getTransactionType,
     getCounterparties
@@ -392,15 +394,20 @@ export function renderCounterpartiesList() {
 }
 
 /**
- * Render accounts list in modal
+ * Render accounts list in modal (ACTIVE accounts only)
  */
 export function renderAccountsList() {
     const list = $('#accounts-list');
     if (!list) return;
 
-    const allAccounts = getAccounts();
+    const activeAccounts = getActiveAccounts();
 
-    list.innerHTML = allAccounts.map(account => {
+    if (activeAccounts.length === 0) {
+        list.innerHTML = '<div class="empty-state">Нет активных счетов</div>';
+        return;
+    }
+
+    list.innerHTML = activeAccounts.map(account => {
         // Type labels (Title Case, clean)
         let typeLabel;
 
@@ -440,6 +447,51 @@ export function renderAccountsList() {
                             <button class="dropdown-item dropdown-item-danger delete-account-btn" data-id="${account.id}">🗑️ Удалить</button>
                         </div>
                     </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+/**
+ * Render archived accounts list in modal
+ */
+export function renderArchivedAccountsList() {
+    const list = $('#archived-accounts-list');
+    if (!list) return;
+
+    const archivedAccounts = getArchivedAccounts();
+
+    if (archivedAccounts.length === 0) {
+        list.innerHTML = '<div class="empty-state">Архив пуст</div>';
+        return;
+    }
+
+    list.innerHTML = archivedAccounts.map(account => {
+        // Type labels
+        let typeLabel;
+        if (account.type === 'asset') {
+            typeLabel = account.credit_limit ? 'Кредитная Карта' : 'Актив';
+        } else if (account.type === 'savings') {
+            typeLabel = 'Накопления';
+        } else if (account.type === 'receivable') {
+            typeLabel = 'Мне Должны';
+        } else if (account.type === 'liability') {
+            const kindMap = { 'credit': 'Кредит', 'installment': 'Рассрочка', 'credit_card': 'Кредитная Карта' };
+            typeLabel = kindMap[account.obligation_kind] || 'Я Должен';
+        } else {
+            typeLabel = account.type;
+        }
+
+        return `
+            <div class="account-list-item archived">
+                <div class="account-list-info">
+                    <span class="account-name">${account.counterparty || account.name}</span>
+                    <span class="account-type-label">${typeLabel}</span>
+                </div>
+                <div class="account-actions">
+                    <span class="account-balance muted">${formatMoney(account.balance)}</span>
+                    <button class="btn btn-ghost btn-sm unarchive-account-btn" data-id="${account.id}">♻️ Восстановить</button>
                 </div>
             </div>
         `;

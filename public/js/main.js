@@ -17,7 +17,7 @@ import {
     setTransactionType, resetState
 } from './state.js';
 import {
-    renderAll, renderAccountsList, renderAnalytics,
+    renderAll, renderAccountsList, renderArchivedAccountsList, renderAnalytics,
     updateTransferSelects
 } from './ui/components.js';
 import {
@@ -246,10 +246,39 @@ function setupEventListeners() {
     // Manage accounts button
     $('#btn-manage-accounts')?.addEventListener('click', () => {
         renderAccountsList();
+        renderArchivedAccountsList();
         openModal('modal-accounts');
     });
 
     $('#modal-accounts-close')?.addEventListener('click', () => closeModal('modal-accounts'));
+
+    // Accounts tabs switching
+    $('#accounts-tabs')?.addEventListener('click', (e) => {
+        const tab = e.target.closest('.tab');
+        if (!tab) return;
+
+        $$('#accounts-tabs .tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+
+        const isActive = tab.dataset.tab === 'active';
+        $('#accounts-list').style.display = isActive ? 'block' : 'none';
+        $('#archived-accounts-list').style.display = isActive ? 'none' : 'block';
+    });
+
+    // Unarchive account (event delegation on archived list)
+    $('#archived-accounts-list')?.addEventListener('click', async (e) => {
+        if (e.target.classList.contains('unarchive-account-btn')) {
+            const id = e.target.dataset.id;
+            const { error } = await accounts.unarchiveAccount(id);
+            if (!error) {
+                const updatedAccounts = await accounts.getAccounts({ includeHidden: true });
+                setAccounts(updatedAccounts);
+                renderAccountsList();
+                renderArchivedAccountsList();
+                await renderAll();
+            }
+        }
+    });
 
     // Add account form
     $('#add-account-form')?.addEventListener('submit', handleAddAccount);

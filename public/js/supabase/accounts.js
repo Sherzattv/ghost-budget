@@ -151,6 +151,15 @@ export async function archiveAccount(id) {
 }
 
 /**
+ * Unarchive account (restore from archive)
+ * @param {string} id
+ * @returns {Promise<{data: Object|null, error: Error|null}>}
+ */
+export async function unarchiveAccount(id) {
+    return updateAccount(id, { is_hidden: false });
+}
+
+/**
  * Delete account with all related transactions (cascade)
  * @param {string} id
  * @returns {Promise<{error: Error|null}>}
