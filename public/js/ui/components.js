@@ -312,7 +312,10 @@ export async function renderTransactions() {
                 </div>
                 <span class="transaction-account">${accountInfo}</span>
                 <span class="transaction-amount ${amountClass}">${amount}</span>
-                <button class="transaction-delete" data-id="${t.id}" title="Удалить">×</button>
+                <div class="transaction-actions">
+                    ${!t.is_debt ? `<button class="transaction-edit" data-id="${t.id}" title="Редактировать">✏️</button>` : ''}
+                    <button class="transaction-delete" data-id="${t.id}" title="Удалить">×</button>
+                </div>
             </div>
         `;
     }).join('');

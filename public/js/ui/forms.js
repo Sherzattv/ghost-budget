@@ -39,3 +39,10 @@ export {
     handleSaveAccountChanges,
     updateModifyFormVisibility
 } from './forms/account-form.js';
+
+// Edit transaction form handlers
+export {
+    handleEditTransaction,
+    handleSaveTransactionEdit,
+    handleCancelEdit
+} from './forms/edit-transaction-form.js';

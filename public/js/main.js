@@ -26,7 +26,8 @@ import {
     handleModifyAccount, handleSaveAccountChanges,
     handleArchiveAccount, handleConfirmDelete,
     handleTransactionTypeChange, updateTransactionForm,
-    handleDebtActionClick, handleDebtTypeChange, handleCreditToggleClick
+    handleDebtActionClick, handleDebtTypeChange, handleCreditToggleClick,
+    handleEditTransaction, handleSaveTransactionEdit, handleCancelEdit
 } from './ui/forms.js';
 import {
     openModal, closeModal,
@@ -234,10 +235,13 @@ function setupEventListeners() {
         }
     });
 
-    // Transaction delete (event delegation)
+    // Transaction actions (event delegation)
     $('#transactions')?.addEventListener('click', (e) => {
         if (e.target.classList.contains('transaction-delete')) {
             handleDeleteTransaction(e.target.dataset.id);
+        }
+        if (e.target.classList.contains('transaction-edit')) {
+            handleEditTransaction(e.target.dataset.id);
         }
     });
 
@@ -376,6 +380,11 @@ function setupEventListeners() {
         const accountId = modal?.dataset.accountId;
         if (accountId) handleConfirmDelete(accountId);
     });
+
+    // Edit transaction modal
+    $('#modal-edit-tx-close')?.addEventListener('click', handleCancelEdit);
+    $('#btn-edit-tx-cancel')?.addEventListener('click', handleCancelEdit);
+    $('#edit-transaction-form')?.addEventListener('submit', handleSaveTransactionEdit);
 
     // ─── UI ───
 

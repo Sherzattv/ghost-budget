@@ -432,6 +432,53 @@
     </div>
   </div>
 
+  <!-- Modal: Edit Transaction -->
+  <div class="modal-overlay" id="modal-edit-transaction">
+    <div class="modal modal-sm">
+      <div class="modal-header">
+        <h3 class="modal-title">Редактировать</h3>
+        <button class="modal-close" id="modal-edit-tx-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="edit-transaction-form">
+          <input type="hidden" id="edit-tx-id">
+          <input type="hidden" id="edit-tx-type">
+          <input type="hidden" id="edit-tx-created-at">
+
+          <div class="form-group">
+            <label class="form-label">Сумма</label>
+            <input type="number" id="edit-tx-amount" class="form-input" step="0.01" min="0.01" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Дата</label>
+            <input type="date" id="edit-tx-date" class="form-input" required>
+          </div>
+
+          <div class="form-group" id="group-edit-category">
+            <label class="form-label">Категория</label>
+            <input type="text" id="edit-tx-category" class="form-input" list="categories-list"
+              placeholder="Выбери или введи">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Заметка <span class="optional">(опционально)</span></label>
+            <input type="text" id="edit-tx-note" class="form-input" placeholder="Комментарий">
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" class="btn btn-ghost" id="btn-edit-tx-cancel">
+              Отмена
+            </button>
+            <button type="submit" class="btn btn-primary">
+              Сохранить
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <!-- Loading Overlay -->
   <div class="loading-overlay" id="loading-overlay">
     <div class="loading-spinner"></div>

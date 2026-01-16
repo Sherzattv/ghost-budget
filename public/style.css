@@ -502,6 +502,31 @@ body {
   color: var(--expense);
 }
 
+/* Transaction Actions Container */
+.transaction-actions {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.transaction-edit {
+  opacity: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 4px;
+  transition: opacity 0.15s;
+}
+
+.transaction:hover .transaction-edit {
+  opacity: 0.6;
+}
+
+.transaction-edit:hover {
+  opacity: 1 !important;
+}
+
 /* ─── Footer ─── */
 .footer {
   display: flex;

@@ -148,6 +148,47 @@ export async function deleteTransaction(id) {
 }
 
 /**
+ * Update an existing transaction
+ * Only amount, date, category_id, note can be changed
+ * Type and account_ids are immutable for data integrity
+ * Balance recalculation handled by database trigger
+ * @param {string} id - Transaction ID
+ * @param {Object} updates - { amount?, date?, category_id?, note? }
+ * @param {string} expectedCreatedAt - Optimistic lock (created_at timestamp)
+ * @returns {Promise<{data: Object|null, error: Error|null}>}
+ */
+export async function updateTransaction(id, updates, expectedCreatedAt = null) {
+    // Build update object (only allowed fields)
+    const allowedUpdates = {};
+    if (updates.amount !== undefined) allowedUpdates.amount = updates.amount;
+    if (updates.date !== undefined) allowedUpdates.date = updates.date;
+    if (updates.category_id !== undefined) allowedUpdates.category_id = updates.category_id;
+    if (updates.note !== undefined) allowedUpdates.note = updates.note;
+
+    let query = supabase
+        .from('transactions')
+        .update(allowedUpdates)
+        .eq('id', id);
+
+    // Optimistic locking: fail if record was modified since load
+    if (expectedCreatedAt) {
+        query = query.eq('created_at', expectedCreatedAt);
+    }
+
+    const { data, error } = await query.select().single();
+
+    // Handle no rows updated (optimistic lock failure or not found)
+    if (!data && !error) {
+        return {
+            data: null,
+            error: new Error('Транзакция была изменена. Обнови страницу.')
+        };
+    }
+
+    return { data, error };
+}
+
+/**
  * Get expense analytics grouped by category
  * Uses RPC function for optimized server-side grouping
  * @param {Object} options - { startDate?, endDate? }
