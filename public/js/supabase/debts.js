@@ -332,6 +332,12 @@ export async function collectDebtSmart({ amount, toAccountId, counterpartyAccoun
             .select()
             .single();
 
+        // 3. Mark account as archived (closed)
+        await supabase
+            .from('accounts')
+            .update({ status: 'archived' })
+            .eq('id', counterpartyAccountId);
+
         return {
             data: { debt: debtTx, income: incomeTx },
             closed: true,
@@ -383,6 +389,12 @@ export async function collectDebtSmart({ amount, toAccountId, counterpartyAccoun
             .select()
             .single();
 
+        // 3. Mark account as archived (closed)
+        await supabase
+            .from('accounts')
+            .update({ status: 'archived' })
+            .eq('id', counterpartyAccountId);
+
         return {
             data: { debt: debtTx, forgive: forgiveTx },
             closed: true,
@@ -409,6 +421,14 @@ export async function collectDebtSmart({ amount, toAccountId, counterpartyAccoun
         })
         .select()
         .single();
+
+    // Check if fully paid (exact amount or more)
+    if (!error && amount >= balance) {
+        await supabase
+            .from('accounts')
+            .update({ status: 'archived' })
+            .eq('id', counterpartyAccountId);
+    }
 
     return {
         data,
