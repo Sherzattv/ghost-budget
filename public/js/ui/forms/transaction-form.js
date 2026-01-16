@@ -10,7 +10,7 @@ import {
     setAccounts,
     addCategory
 } from '../../state.js';
-import { accounts, transactions, categories } from '../../supabase/index.js';
+import { accounts, transactions, categories, debts } from '../../supabase/index.js';
 import {
     renderAll,
     renderCategoriesList
@@ -36,6 +36,11 @@ export async function handleAddTransaction(e) {
     }
 
     const amount = parseFloat($('#input-amount').value);
+
+    // Check if split expense with friends
+    const splitEnabled = $('#input-split-expense')?.checked;
+    const splitWho = $('#input-split-who')?.value?.trim();
+    const splitAmount = parseFloat($('#input-split-amount')?.value) || 0;
     const categoryName = $('#input-category')?.value?.trim();
     const accountId = $('#input-account')?.value;
     const fromAccountId = $('#input-from-account')?.value;
@@ -71,20 +76,42 @@ export async function handleAddTransaction(e) {
             }
         }
 
-        const { data, error } = await transactions.createTransaction({
-            type: currentType,
-            amount,
-            category_id,
-            account_id: currentType !== 'transfer' ? accountId : null,
-            from_account_id: currentType === 'transfer' ? fromAccountId : null,
-            to_account_id: currentType === 'transfer' ? toAccountId : null,
-            note
-        });
+        let result;
 
-        if (error) {
-            console.error('Transaction error:', error.message);
-            showLoading(false);
-            return;
+        // Handle split expense: expense + debt in one operation
+        if (currentType === 'expense' && splitEnabled && splitWho && splitAmount > 0) {
+            result = await debts.createExpenseWithDebt({
+                expenseAmount: amount,
+                accountId,
+                categoryId: category_id,
+                debtAmount: splitAmount,
+                counterparty: splitWho,
+                note
+            });
+
+            if (result.error) {
+                console.error('Split expense error:', result.error.message);
+                showLoading(false);
+                return;
+            }
+        } else {
+            // Normal transaction
+            const { data, error } = await transactions.createTransaction({
+                type: currentType,
+                amount,
+                category_id,
+                account_id: currentType !== 'transfer' ? accountId : null,
+                from_account_id: currentType === 'transfer' ? fromAccountId : null,
+                to_account_id: currentType === 'transfer' ? toAccountId : null,
+                note
+            });
+
+            if (error) {
+                console.error('Transaction error:', error.message);
+                showLoading(false);
+                return;
+            }
+            result = { data };
         }
 
         // Reload accounts to get updated balances
@@ -151,6 +178,11 @@ export function updateTransactionForm() {
     $('#group-account').style.display = (isTransfer || isDebt) ? 'none' : 'block';
     $('#group-from-account').style.display = isTransfer ? 'block' : 'none';
     $('#group-to-account').style.display = isTransfer ? 'block' : 'none';
+
+    // Split expense checkbox (only for expense)
+    $('#group-split-expense').style.display = currentType === 'expense' ? 'block' : 'none';
+    $('#group-split-details').style.display = 'none';
+    if ($('#input-split-expense')) $('#input-split-expense').checked = false;
 
     // Debt fields - show action buttons only
     $('#group-debt-action').style.display = isDebt ? 'block' : 'none';

@@ -717,6 +717,16 @@ body {
   accent-color: var(--accent);
 }
 
+/* Split expense row */
+.split-row {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.split-row .form-input {
+  flex: 1;
+}
+
 .form-input,
 .form-select {
   width: 100%;

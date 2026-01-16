@@ -214,6 +214,11 @@ function setupEventListeners() {
     // Transfer account mutual exclusion
     $('#input-from-account')?.addEventListener('change', updateTransferSelects);
 
+    // Split expense checkbox toggle
+    $('#input-split-expense')?.addEventListener('change', (e) => {
+        $('#group-split-details').style.display = e.target.checked ? 'block' : 'none';
+    });
+
     // Debt action buttons (event delegation)
     document.querySelector('.debt-action-buttons')?.addEventListener('click', (e) => {
         const btn = e.target.closest('.debt-action-btn');

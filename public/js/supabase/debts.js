@@ -62,6 +62,93 @@ export async function findOrCreateCounterparty(counterparty, type, options = {})
     return { data: created, error: createError };
 }
 
+// ─── Combined Operations ───
+
+/**
+ * Create expense + debt in one operation
+ * Use case: "I paid 10k for cafe, friends owe me 5k"
+ * @param {Object} params
+ * @returns {Promise<{expense: Object, debt: Object, error: Error|null}>}
+ */
+export async function createExpenseWithDebt({
+    expenseAmount,
+    accountId,
+    categoryId,
+    debtAmount,
+    counterparty,
+    note
+}) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { expense: null, debt: null, error: new Error('Not authenticated') };
+
+    if (!expenseAmount || expenseAmount <= 0) {
+        return { expense: null, debt: null, error: new Error('Сумма расхода должна быть больше 0') };
+    }
+    if (!accountId) {
+        return { expense: null, debt: null, error: new Error('Выбери счёт') };
+    }
+    if (!debtAmount || debtAmount <= 0) {
+        return { expense: null, debt: null, error: new Error('Сумма долга должна быть больше 0') };
+    }
+    if (debtAmount >= expenseAmount) {
+        return { expense: null, debt: null, error: new Error('Долг не может быть больше расхода') };
+    }
+    if (!counterparty?.trim()) {
+        return { expense: null, debt: null, error: new Error('Укажи кто должен') };
+    }
+
+    // 1. Create expense transaction
+    const { data: expense, error: expError } = await supabase
+        .from('transactions')
+        .insert({
+            user_id: user.id,
+            type: 'expense',
+            amount: expenseAmount,
+            date: new Date().toISOString().split('T')[0],
+            account_id: accountId,
+            category_id: categoryId || null,
+            note: note || null
+        })
+        .select()
+        .single();
+
+    if (expError) {
+        return { expense: null, debt: null, error: expError };
+    }
+
+    // 2. Find or create counterparty account
+    const { data: counterpartyAccount, error: cpError } = await findOrCreateCounterparty(
+        counterparty.trim(),
+        'receivable',
+        {}
+    );
+
+    if (cpError || !counterpartyAccount) {
+        return { expense, debt: null, error: cpError || new Error('Не удалось создать контрагента') };
+    }
+
+    // 3. Create lend (debt_op) transaction
+    const { data: debt, error: debtError } = await supabase
+        .from('transactions')
+        .insert({
+            user_id: user.id,
+            type: 'debt_op',
+            amount: debtAmount,
+            date: new Date().toISOString().split('T')[0],
+            from_account_id: accountId,
+            to_account_id: counterpartyAccount.id,
+            is_debt: true,
+            debt_direction: 'lent',
+            debt_counterparty: counterparty.trim(),
+            related_account_id: counterpartyAccount.id,
+            note: `Доля за: ${note || 'расход'}`
+        })
+        .select()
+        .single();
+
+    return { expense, debt, error: debtError };
+}
+
 // ─── Debt Operations ───
 
 /**

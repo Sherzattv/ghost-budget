@@ -298,6 +298,21 @@
           <input type="text" class="form-input" id="input-note" placeholder="...">
         </div>
 
+        <!-- Split expense with friends (only for expense) -->
+        <div class="form-group" id="group-split-expense" style="display: none;">
+          <label class="checkbox-label">
+            <input type="checkbox" id="input-split-expense">
+            <span>Часть оплатят друзья</span>
+          </label>
+        </div>
+
+        <div class="form-group" id="group-split-details" style="display: none;">
+          <div class="split-row">
+            <input type="text" id="input-split-who" class="form-input" placeholder="Кто" list="counterparties-list">
+            <input type="number" id="input-split-amount" class="form-input" placeholder="Сколько" step="0.01">
+          </div>
+        </div>
+
         <button type="submit" class="btn btn-primary btn-full" id="btn-add-transaction">Добавить</button>
       </form>
 
