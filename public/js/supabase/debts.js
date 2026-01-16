@@ -170,6 +170,168 @@ export async function collectDebt({ amount, toAccountId, counterpartyAccountId, 
 }
 
 /**
+ * Smart debt collection with overpayment/underpayment handling
+ * - If amount > balance: close debt + create income for excess
+ * - If amount < balance + closeDebt: close debt + forgive remainder
+ * - Otherwise: normal partial/full collection
+ * @param {Object} params
+ * @returns {Promise<{data: Object, closed: boolean, excess?: number, forgiven?: number, error?: Error}>}
+ */
+export async function collectDebtSmart({ amount, toAccountId, counterpartyAccountId, closeDebt = false, note }) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: new Error('Not authenticated') };
+
+    if (!amount || amount <= 0) {
+        return { data: null, error: new Error('Сумма должна быть больше 0') };
+    }
+    if (!toAccountId) {
+        return { data: null, error: new Error('Выбери счёт поступления') };
+    }
+    if (!counterpartyAccountId) {
+        return { data: null, error: new Error('Выбери кто возвращает') };
+    }
+
+    // Get counterparty account with balance
+    const { data: cpAccount, error: fetchError } = await supabase
+        .from('accounts')
+        .select('*')
+        .eq('id', counterpartyAccountId)
+        .single();
+
+    if (fetchError || !cpAccount) {
+        return { data: null, error: fetchError || new Error('Контрагент не найден') };
+    }
+
+    const balance = Number(cpAccount.balance);
+    const counterparty = cpAccount.counterparty || cpAccount.name;
+
+    // Case 1: OVERPAYMENT - amount > balance
+    if (amount > balance && balance > 0) {
+        const excess = amount - balance;
+
+        // 1. Close debt exactly at balance
+        const { data: debtTx, error: debtError } = await supabase
+            .from('transactions')
+            .insert({
+                user_id: user.id,
+                type: 'debt_op',
+                amount: balance,
+                date: new Date().toISOString().split('T')[0],
+                from_account_id: counterpartyAccountId,
+                to_account_id: toAccountId,
+                is_debt: true,
+                debt_direction: 'return',
+                debt_counterparty: counterparty,
+                related_account_id: counterpartyAccountId,
+                note: note || `Возврат от: ${counterparty}`
+            })
+            .select()
+            .single();
+
+        if (debtError) return { data: null, error: debtError };
+
+        // 2. Create income for excess
+        const { data: incomeTx, error: incomeError } = await supabase
+            .from('transactions')
+            .insert({
+                user_id: user.id,
+                type: 'income',
+                amount: excess,
+                date: new Date().toISOString().split('T')[0],
+                account_id: toAccountId,
+                is_debt: false,
+                note: `Переплата от ${counterparty}`
+            })
+            .select()
+            .single();
+
+        return {
+            data: { debt: debtTx, income: incomeTx },
+            closed: true,
+            excess,
+            error: incomeError
+        };
+    }
+
+    // Case 2: UNDERPAYMENT with force close
+    if (amount < balance && closeDebt) {
+        const forgiven = balance - amount;
+
+        // 1. Collect what was paid
+        const { data: debtTx, error: debtError } = await supabase
+            .from('transactions')
+            .insert({
+                user_id: user.id,
+                type: 'debt_op',
+                amount,
+                date: new Date().toISOString().split('T')[0],
+                from_account_id: counterpartyAccountId,
+                to_account_id: toAccountId,
+                is_debt: true,
+                debt_direction: 'return',
+                debt_counterparty: counterparty,
+                related_account_id: counterpartyAccountId,
+                note: note || `Частичный возврат от: ${counterparty}`
+            })
+            .select()
+            .single();
+
+        if (debtError) return { data: null, error: debtError };
+
+        // 2. Forgive remainder (expense from receivable)
+        const { data: forgiveTx, error: forgiveError } = await supabase
+            .from('transactions')
+            .insert({
+                user_id: user.id,
+                type: 'expense',
+                amount: forgiven,
+                date: new Date().toISOString().split('T')[0],
+                account_id: counterpartyAccountId,
+                is_debt: true,
+                debt_direction: 'forgive',
+                debt_counterparty: counterparty,
+                related_account_id: counterpartyAccountId,
+                note: `Списал долг: ${counterparty}`
+            })
+            .select()
+            .single();
+
+        return {
+            data: { debt: debtTx, forgive: forgiveTx },
+            closed: true,
+            forgiven,
+            error: forgiveError
+        };
+    }
+
+    // Case 3: NORMAL - exact or partial payment
+    const { data, error } = await supabase
+        .from('transactions')
+        .insert({
+            user_id: user.id,
+            type: 'debt_op',
+            amount,
+            date: new Date().toISOString().split('T')[0],
+            from_account_id: counterpartyAccountId,
+            to_account_id: toAccountId,
+            is_debt: true,
+            debt_direction: 'return',
+            debt_counterparty: counterparty,
+            related_account_id: counterpartyAccountId,
+            note: note || `Возврат от: ${counterparty}`
+        })
+        .select()
+        .single();
+
+    return {
+        data,
+        closed: amount >= balance,
+        remaining: balance - amount,
+        error
+    };
+}
+
+/**
  * Create "Я взял в долг" operation
  * Money comes to my account ← counterparty (liability) balance decreases (negative)
  * @param {Object} params

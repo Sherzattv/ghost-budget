@@ -78,11 +78,13 @@ export async function handleDebtOperation(e) {
                 break;
 
             case 'collect':
-                // Мне вернули
-                result = await debts.collectDebt({
+                // Мне вернули — use smart collection
+                const closeDebt = $('#input-close-debt')?.checked || false;
+                result = await debts.collectDebtSmart({
                     amount,
                     toAccountId: accountId,
                     counterpartyAccountId: counterpartySelectId,
+                    closeDebt,
                     note
                 });
                 break;
@@ -227,6 +229,9 @@ export function updateDebtFormFields() {
         $('#label-counterparty-select').textContent = 'Кто вернул';
         populateCounterpartySelect('collect');
 
+        // Setup balance hint on amount change
+        setupBalanceHint();
+
     } else if (action === 'repay') {
         // "Я вернул" - select from liabilities, money goes FROM asset
         if (accountLabel) accountLabel.textContent = 'Откуда';
@@ -285,4 +290,87 @@ export function handleCreditToggleClick(creditType) {
 
     // Update form fields
     updateDebtFormFields();
+}
+
+// ─── Balance Hint for Smart Collection ───
+
+// Keep track of listener to avoid duplicates
+let balanceHintSetup = false;
+
+/**
+ * Setup balance hint that shows over/underpayment info
+ */
+function setupBalanceHint() {
+    if (balanceHintSetup) return;
+
+    const amountInput = $('#input-amount');
+    const cpSelect = $('#input-counterparty-select');
+    const hintEl = $('#hint-debt-balance');
+    const closeDebtGroup = $('#group-close-debt');
+    const closeDebtLabel = $('#label-close-debt');
+    const closeDebtCheckbox = $('#input-close-debt');
+
+    if (!amountInput || !cpSelect) return;
+
+    const updateHint = () => {
+        const amount = parseFloat(amountInput.value) || 0;
+        const selectedId = cpSelect.value;
+
+        // Find account from current receivables
+        const receivables = getActiveReceivables();
+        const account = receivables.find(a => a.id === selectedId);
+
+        if (!account || amount <= 0) {
+            if (hintEl) hintEl.textContent = '';
+            if (closeDebtGroup) closeDebtGroup.style.display = 'none';
+            return;
+        }
+
+        const balance = Number(account.balance);
+        const diff = amount - balance;
+
+        if (diff > 0) {
+            // Overpayment
+            if (hintEl) {
+                hintEl.textContent = `Больше на ${formatMoney(diff)} → будет доход`;
+                hintEl.className = 'hint hint-info';
+            }
+            if (closeDebtGroup) closeDebtGroup.style.display = 'none';
+            // Auto-check, will be handled automatically
+            if (closeDebtCheckbox) closeDebtCheckbox.checked = true;
+
+        } else if (diff < 0) {
+            // Underpayment
+            if (hintEl) {
+                hintEl.textContent = `Остаётся ${formatMoney(Math.abs(diff))}`;
+                hintEl.className = 'hint hint-warning';
+            }
+            if (closeDebtGroup) closeDebtGroup.style.display = 'block';
+            if (closeDebtLabel) closeDebtLabel.textContent = `Закрыть и простить ${formatMoney(Math.abs(diff))}`;
+
+        } else {
+            // Exact match
+            if (hintEl) hintEl.textContent = '';
+            if (closeDebtGroup) closeDebtGroup.style.display = 'none';
+        }
+    };
+
+    amountInput.addEventListener('input', updateHint);
+    cpSelect.addEventListener('change', updateHint);
+
+    // Initial check
+    updateHint();
+
+    balanceHintSetup = true;
+}
+
+/**
+ * Reset balance hint tracking (called on tab change)
+ */
+export function resetBalanceHint() {
+    balanceHintSetup = false;
+    const hintEl = $('#hint-debt-balance');
+    const closeDebtGroup = $('#group-close-debt');
+    if (hintEl) hintEl.textContent = '';
+    if (closeDebtGroup) closeDebtGroup.style.display = 'none';
 }
