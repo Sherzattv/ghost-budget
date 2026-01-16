@@ -127,6 +127,7 @@ export async function handleDebtOperation(e) {
         setAccounts(updatedAccounts);
 
         clearTransactionForm();
+        resetBalanceHint();
         await renderAll();
 
         // Close panel on mobile
