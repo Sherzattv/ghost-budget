@@ -232,15 +232,19 @@ export function getLiabilities() {
 
 /**
  * Get active liabilities (balance < 0)
- * Only personal debts (to people), NOT credit card debts
+ * Includes both personal debts and credit card debts
  * @returns {Array}
  */
 export function getActiveLiabilities() {
-    // Personal debts only (type = liability with negative balance)
-    // Credit cards are NOT included - they're managed separately
-    return accountsCache.filter(a =>
+    // Personal debts (type = liability with negative balance)
+    const personalDebts = accountsCache.filter(a =>
         a.type === 'liability' && Number(a.balance) < -0.01
     );
+
+    // Credit card debts (type = asset with credit_limit, where used > 0)
+    const creditDebts = getCreditCardDebts();
+
+    return [...personalDebts, ...creditDebts];
 }
 
 /**
@@ -298,15 +302,25 @@ export function getTotalReceivables() {
 }
 
 /**
- * Get total liabilities (сколько я должен людям)
- * Only personal debts, NOT credit card debts
+ * Get total liabilities (сколько я должен)
+ * Includes personal debts + credit card debts
  * @returns {number}
  */
 export function getTotalLiabilities() {
-    // Personal debts only (exclude hidden)
-    return accountsCache
+    // Personal debts (exclude hidden)
+    const personalDebts = accountsCache
         .filter(a => a.type === 'liability' && !a.is_hidden)
         .reduce((sum, a) => sum + Math.abs(Math.min(0, Number(a.balance))), 0);
+
+    // Credit card debts (credit_limit - balance)
+    const creditDebts = accountsCache
+        .filter(a => a.credit_limit && !a.is_hidden)
+        .reduce((sum, a) => {
+            const debt = Number(a.credit_limit) - Number(a.balance);
+            return sum + Math.max(0, debt);
+        }, 0);
+
+    return personalDebts + creditDebts;
 }
 
 /**
