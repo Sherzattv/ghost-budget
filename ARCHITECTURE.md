@@ -56,6 +56,7 @@ erDiagram
         text counterparty
         boolean is_hidden
         date expected_return_date
+        numeric friend_balance
     }
     
     transactions {
