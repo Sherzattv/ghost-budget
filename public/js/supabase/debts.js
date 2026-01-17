@@ -62,6 +62,31 @@ export async function findOrCreateCounterparty(counterparty, type, options = {})
     return { data: created, error: createError };
 }
 
+/**
+ * Archive account if balance is zero (for receivable/liability)
+ * @param {string} accountId - Account ID to check and archive
+ */
+async function archiveIfZeroBalance(accountId) {
+    const { data: account } = await supabase
+        .from('accounts')
+        .select('balance, type')
+        .eq('id', accountId)
+        .single();
+
+    if (!account) return;
+
+    // Only archive receivable/liability with zero balance
+    const isDebtAccount = ['receivable', 'liability'].includes(account.type);
+    const isZero = Math.abs(account.balance) < 0.01;
+
+    if (isDebtAccount && isZero) {
+        await supabase
+            .from('accounts')
+            .update({ status: 'archived' })
+            .eq('id', accountId);
+    }
+}
+
 // ─── Combined Operations ───
 
 /**
@@ -332,6 +357,9 @@ export async function collectDebtSmart({ amount, toAccountId, counterpartyAccoun
             .select()
             .single();
 
+        // Archive account if balance is now zero
+        await archiveIfZeroBalance(counterpartyAccountId);
+
         return {
             data: { debt: debtTx, income: incomeTx },
             closed: true,
@@ -383,6 +411,9 @@ export async function collectDebtSmart({ amount, toAccountId, counterpartyAccoun
             .select()
             .single();
 
+        // Archive account after forgiveness
+        await archiveIfZeroBalance(counterpartyAccountId);
+
         return {
             data: { debt: debtTx, forgive: forgiveTx },
             closed: true,
@@ -409,6 +440,11 @@ export async function collectDebtSmart({ amount, toAccountId, counterpartyAccoun
         })
         .select()
         .single();
+
+    // Archive if fully paid
+    if (amount >= balance) {
+        await archiveIfZeroBalance(counterpartyAccountId);
+    }
 
     return {
         data,
