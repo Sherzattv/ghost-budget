@@ -6,6 +6,7 @@
 import { $, showLoading, isValidAmount } from '../../utils.js';
 import {
     setAccounts,
+    getAccounts,
     getActiveReceivables,
     getActiveLiabilities
 } from '../../state.js';
@@ -16,6 +17,24 @@ import {
 } from '../components.js';
 import { formatMoney } from '../../utils.js';
 import { showValidationError, clearTransactionForm } from './transaction-form.js';
+
+/**
+ * Populate debt account select with asset/savings accounts
+ */
+function populateDebtAccountSelect() {
+    const select = $('#input-debt-account');
+    if (!select) return;
+
+    const allAccounts = getAccounts();
+    // Only show assets and savings (not debts)
+    const assetAccounts = allAccounts.filter(a =>
+        ['asset', 'savings'].includes(a.type)
+    );
+
+    select.innerHTML = assetAccounts
+        .map(a => `<option value="${a.id}">${a.name}</option>`)
+        .join('');
+}
 
 // ─── Debt Operations ───
 
@@ -30,7 +49,7 @@ export async function handleDebtOperation(e) {
     const amount = parseFloat($('#input-amount')?.value);
     const counterparty = $('#input-counterparty')?.value?.trim();
     const counterpartySelectId = $('#input-counterparty-select')?.value;
-    const accountId = $('#input-account')?.value;
+    const accountId = $('#input-debt-account')?.value;
     const returnDate = $('#input-return-date')?.value || null;
     const note = $('#input-note')?.value?.trim();
 
@@ -56,7 +75,7 @@ export async function handleDebtOperation(e) {
     }
 
     if (!accountId) {
-        showValidationError('#input-account', 'Выбери счёт');
+        showValidationError('#input-debt-account', 'Выбери счёт');
         return;
     }
 
@@ -182,12 +201,12 @@ export function updateDebtFormFields() {
     const debtType = document.querySelector('input[name="debt-type"]:checked')?.value || 'person';
     const creditType = document.querySelector('.toggle-btn.active')?.dataset.creditType || 'credit';
 
-    // Hide all optional fields first
+    // Hide all optional debt fields first
     $('#group-debt-type').style.display = 'none';
     $('#group-credit-toggle').style.display = 'none';
     $('#group-counterparty').style.display = 'none';
     $('#group-counterparty-select').style.display = 'none';
-    $('#group-account').style.display = 'none';
+    $('#group-debt-account').style.display = 'none';
     $('#group-monthly-payment').style.display = 'none';
     $('#group-payment-day').style.display = 'none';
     $('#group-interest-rate').style.display = 'none';
@@ -195,9 +214,10 @@ export function updateDebtFormFields() {
 
     if (!action) return;
 
-    // Show account field with appropriate label
-    $('#group-account').style.display = 'block';
-    const accountLabel = $('#group-account')?.querySelector('.form-label');
+    // Show account field with appropriate label (now below action buttons)
+    $('#group-debt-account').style.display = 'block';
+    populateDebtAccountSelect();
+    const accountLabel = $('#label-debt-account');
 
     if (action === 'lend') {
         // "Я дал" - counterparty text input, money goes FROM asset
