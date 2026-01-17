@@ -6,9 +6,7 @@
 import { getAccountById } from '../../state.js';
 
 export const FORM_FIELDS = {
-    // ─── Common Fields ───
-    'group-amount': { always: true },
-    'group-note': { always: true },
+    // Note: Amount and Note fields are always visible (no ID needed, handled by CSS)
 
     // ─── Transaction Type Specific ───
     'group-category': { types: ['expense', 'income'] },
@@ -49,23 +47,22 @@ export const FORM_FIELDS = {
         }
     },
 
-    // Smart Collection Checkbox (Collect/Repay + partial/over amount)
+    // Smart Collection Checkbox (Collect/Repay + UNDERPAYMENT only)
     'group-close-debt': {
         types: ['debt'],
         debtActions: ['collect', 'repay'],
         condition: (state, formData) => {
             const amount = parseFloat(formData.amount) || 0;
             const selectedDebtId = formData.counterpartySelectId;
-            if (!selectedDebtId) return false;
+            if (!selectedDebtId || amount <= 0) return false;
 
-            // We need to fetch the debt account to check balance
-            // Ideally this data should be available synchronously or passed in
             const debt = getAccountById(selectedDebtId);
             if (!debt) return false;
 
             const balance = Math.abs(debt.balance);
-            // Show checkbox if amount is not exactly equal to balance (over or under payment)
-            return Math.abs(amount - balance) > 0.01;
+            // Show checkbox ONLY on underpayment (amount < balance)
+            // On overpayment, the excess becomes income automatically
+            return amount < balance - 0.01;
         }
     }
 };

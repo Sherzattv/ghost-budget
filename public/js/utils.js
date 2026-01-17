@@ -141,3 +141,47 @@ export function isValidAmount(value) {
 export function isNotEmpty(value) {
     return typeof value === 'string' && value.trim().length > 0;
 }
+
+// ─── Calculator Helper ───
+
+/**
+ * Evaluate simple math expression (supports +, -, *, /)
+ * Returns the calculated result or the original value if not a valid expression
+ * @param {string} expression - Math expression like "850-128" or "100+50*2"
+ * @returns {number|null} - Calculated result or null if invalid
+ */
+export function evaluateExpression(expression) {
+    if (!expression || typeof expression !== 'string') return null;
+
+    // Clean the input: remove spaces, replace comma with dot
+    const cleaned = expression.trim().replace(/\s/g, '').replace(',', '.');
+
+    // If it's just a number, return it
+    if (/^-?\d+(\.\d+)?$/.test(cleaned)) {
+        return parseFloat(cleaned);
+    }
+
+    // Check if it looks like a math expression (contains operators)
+    if (!/^[\d+\-*/().]+$/.test(cleaned)) {
+        return null; // Contains invalid characters
+    }
+
+    // Safety: don't evaluate if it has suspicious patterns
+    if (/[a-zA-Z_$]/.test(cleaned)) {
+        return null;
+    }
+
+    try {
+        // Use Function constructor (safer than eval, no access to scope)
+        const result = new Function('return ' + cleaned)();
+
+        // Validate result
+        if (typeof result === 'number' && isFinite(result) && result >= 0) {
+            // Round to 2 decimal places
+            return Math.round(result * 100) / 100;
+        }
+        return null;
+    } catch {
+        return null;
+    }
+}

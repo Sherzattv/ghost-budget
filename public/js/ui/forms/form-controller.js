@@ -5,6 +5,7 @@
 
 import { FORM_FIELDS, FIELD_LABELS } from './form-config.js';
 import { populators, populateSelect } from './field-populators.js';
+import { renderCounterpartiesList, renderCategoriesList } from '../components.js';
 
 class FormController {
     constructor() {
@@ -53,14 +54,20 @@ class FormController {
     }
 
     /**
-     * Sync state values to DOM hidden inputs
+     * Sync state values to DOM hidden inputs and native inputs
      */
     updateDom() {
-        const { debtAction } = this.state;
+        const { debtAction, debtType, creditType } = this.state;
+
+        // Hidden input for debt action
         const actionInput = document.getElementById('input-debt-action');
         if (actionInput && debtAction) {
             actionInput.value = debtAction;
         }
+
+        // Sync debt type radio buttons
+        const radio = document.querySelector(`input[name="debt-type"][value="${debtType}"]`);
+        if (radio) radio.checked = true;
     }
 
     /**
@@ -162,6 +169,7 @@ class FormController {
 
         if (['expense', 'income'].includes(type)) {
             populateSelect('input-account', populators['input-account']());
+            renderCategoriesList(); // Populate category autocomplete
         }
 
         if (type === 'transfer') {
@@ -174,6 +182,11 @@ class FormController {
 
         if (type === 'debt') {
             populateSelect('input-debt-account', populators['input-debt-account']());
+
+            // Populate counterparty autocomplete for lend/borrow
+            if (['lend', 'borrow'].includes(debtAction)) {
+                renderCounterpartiesList();
+            }
 
             if (['collect', 'repay'].includes(debtAction)) {
                 populateSelect('input-counterparty-select', populators['input-counterparty-select'](debtAction));

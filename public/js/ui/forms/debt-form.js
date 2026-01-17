@@ -241,9 +241,14 @@ export function updateBalanceHint() {
     const diff = amount - balance;
 
     if (diff > 0.01) {
-        // Overpayment
+        // Overpayment - checkbox doesn't make sense here
         hintEl.textContent = `Больше на ${formatMoney(diff)} → будет доход`;
         hintEl.className = 'hint hint-info';
+
+        // Reset checkbox label since it's not relevant for overpayment
+        if (closeDebtLabel) {
+            closeDebtLabel.textContent = 'Закрыть долг полностью';
+        }
 
     } else if (diff < -0.01) {
         // Underpayment
@@ -254,8 +259,12 @@ export function updateBalanceHint() {
             closeDebtLabel.textContent = `Закрыть и простить ${formatMoney(Math.abs(diff))}`;
         }
     } else {
-        // Exact match
+        // Exact match - hide hint completely
         hintEl.textContent = '';
+        hintEl.className = 'hint';  // Reset to base class (no background)
+        if (closeDebtLabel) {
+            closeDebtLabel.textContent = 'Закрыть долг полностью';
+        }
     }
 }
 
@@ -264,5 +273,8 @@ export function updateBalanceHint() {
  */
 export function resetBalanceHint() {
     const hintEl = $('#hint-debt-balance');
-    if (hintEl) hintEl.textContent = '';
+    if (hintEl) {
+        hintEl.textContent = '';
+        hintEl.className = 'hint';  // Reset to base class (no background)
+    }
 }

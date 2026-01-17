@@ -17,7 +17,7 @@ export const populators = {
 
         return validAccounts.map(a => ({
             value: a.id,
-            label: `${a.name} (${formatMoney(a.balance)})`
+            label: a.name
         }));
     },
 
@@ -31,7 +31,7 @@ export const populators = {
 
         return validAccounts.map(a => ({
             value: a.id,
-            label: `${a.name} (${formatMoney(a.balance)})`
+            label: a.name
         }));
     },
 
@@ -64,7 +64,7 @@ export const populators = {
 
         return validAccounts.map(a => ({
             value: a.id,
-            label: `${a.name} (${formatMoney(a.balance)})`
+            label: a.name
         }));
     },
 
@@ -82,7 +82,7 @@ export const populators = {
 
         return validAccounts.map(a => ({
             value: a.id,
-            label: `${a.name} (${formatMoney(a.balance)})`
+            label: a.name
         }));
     }
 };

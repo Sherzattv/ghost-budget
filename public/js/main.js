@@ -11,7 +11,7 @@
 
 // ─── Imports ───
 import { auth, accounts, categories } from './supabase/index.js';
-import { $, $$, showLoading, showError } from './utils.js';
+import { $, $$, showLoading, showError, evaluateExpression } from './utils.js';
 import {
     setUser, getUser, setAccounts, setCategories,
     setTransactionType, resetState
@@ -220,6 +220,18 @@ function setupEventListeners() {
         updateBalanceHint();
     });
 
+    // Calculator feature: evaluate expressions like "850-128" on blur
+    $('#input-amount')?.addEventListener('blur', (e) => {
+        const input = e.target;
+        const result = evaluateExpression(input.value);
+        if (result !== null && input.value !== String(result)) {
+            input.value = result;
+            // Trigger update for hints
+            formController.renderDynamicFields();
+            updateBalanceHint();
+        }
+    });
+
     $('#input-counterparty-select')?.addEventListener('change', () => {
         formController.renderDynamicFields();
         updateBalanceHint();
@@ -229,25 +241,26 @@ function setupEventListeners() {
         formController.toggleSplit(e.target.checked);
     });
 
-    // Transaction type tabs
-    document.querySelectorAll('.tab').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.preventDefault();
-            const type = e.target.dataset.type;
-            handleTransactionTypeChange(type);
-        });
+
+
+    // Account selection handled by FormController.populateFields()
+
+    // Transfer: update "To" account options when "From" changes
+    $('#input-from-account')?.addEventListener('change', () => {
+        formController.populateFields();
     });
 
-    // Account selection
-    $('#input-account')?.addEventListener('change', updateAccountSelection);
-
-    // Debt actions
-    document.querySelectorAll('.debt-action-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            // Find button if icon/text clicked
-            const target = e.target.closest('.debt-action-btn');
-            if (target) handleDebtActionClick(target.dataset.action);
-        });
+    // Debt actions (fail-safe document delegation)
+    document.body.addEventListener('click', (e) => {
+        const btn = e.target.closest('.debt-action-btn');
+        if (btn) {
+            e.preventDefault();
+            const action = btn.dataset.action;
+            if (action) {
+                console.log('Debt action clicked:', action);
+                handleDebtActionClick(action);
+            }
+        }
     });
 
     // Debt type (person/credit)
@@ -258,7 +271,7 @@ function setupEventListeners() {
     // Credit/Installment toggle
     document.querySelectorAll('.toggle-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            handleCreditToggleClick(e.target.dataset.creditType);
+            handleCreditToggleClick(e.currentTarget.dataset.creditType);
         });
     });
 
