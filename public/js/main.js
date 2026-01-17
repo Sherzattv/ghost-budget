@@ -242,11 +242,14 @@ function setupEventListeners() {
 
     // Transaction actions (event delegation)
     $('#transactions')?.addEventListener('click', (e) => {
-        if (e.target.classList.contains('transaction-delete')) {
-            handleDeleteTransaction(e.target.dataset.id);
+        const deleteBtn = e.target.closest('.transaction-delete');
+        const editBtn = e.target.closest('.transaction-edit');
+
+        if (deleteBtn) {
+            handleDeleteTransaction(deleteBtn.dataset.id);
         }
-        if (e.target.classList.contains('transaction-edit')) {
-            handleEditTransaction(e.target.dataset.id);
+        if (editBtn) {
+            handleEditTransaction(editBtn.dataset.id);
         }
     });
 
