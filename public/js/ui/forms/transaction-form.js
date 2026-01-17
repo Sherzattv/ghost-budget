@@ -143,6 +143,11 @@ export async function handleDeleteTransaction(id) {
 
     if (error) {
         console.error('Delete transaction error:', error.message);
+
+        // Check for balance constraint error
+        if (error.message.includes('balance_check') || error.message.includes('constraint')) {
+            alert('Нельзя удалить эту операцию — сначала удалите связанные транзакции (возврат, погашение)');
+        }
     } else {
         // Reload accounts
         const updatedAccounts = await accounts.getAccounts({ includeHidden: true });
