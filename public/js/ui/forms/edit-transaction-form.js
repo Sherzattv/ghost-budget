@@ -27,13 +27,6 @@ export async function handleEditTransaction(id) {
         return;
     }
 
-    // Don't allow editing debt transactions
-    if (tx.is_debt) {
-        console.warn('Cannot edit debt transactions');
-        showLoading(false);
-        return;
-    }
-
     // Cache for optimistic locking
     editingTransaction = tx;
 
@@ -45,9 +38,9 @@ export async function handleEditTransaction(id) {
     $('#edit-tx-date').value = tx.date;
     $('#edit-tx-note').value = tx.note || '';
 
-    // Category field: only for expense/income
+    // Category field: only for expense/income (not transfer or debt)
     const categoryGroup = $('#group-edit-category');
-    if (tx.type === 'transfer') {
+    if (tx.type === 'transfer' || tx.type === 'debt_op' || tx.is_debt) {
         categoryGroup.style.display = 'none';
         $('#edit-tx-category').value = '';
     } else {
