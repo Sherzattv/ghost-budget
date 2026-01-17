@@ -276,7 +276,9 @@ export async function renderTransactions() {
                     'forgive': 'списано',
                     'interest': 'проценты'
                 };
-                info = `${t.debt_counterparty || fromName} → ${toName}`;
+
+                // Show counterparty name as main info, not "X → X"
+                info = t.debt_counterparty || t.to_account?.counterparty || t.from_account?.counterparty || '?';
                 accountInfo = directionLabels[t.debt_direction] || 'долг';
 
                 // Color based on direction
@@ -313,7 +315,7 @@ export async function renderTransactions() {
                 <span class="transaction-account">${accountInfo}</span>
                 <span class="transaction-amount ${amountClass}">${amount}</span>
                 <div class="transaction-actions">
-                    ${!t.is_debt ? `<button class="transaction-edit" data-id="${t.id}" title="Редактировать">✏️</button>` : ''}
+                    <button class="transaction-edit" data-id="${t.id}" title="Редактировать">✏️</button>
                     <button class="transaction-delete" data-id="${t.id}" title="Удалить">×</button>
                 </div>
             </div>
