@@ -139,42 +139,34 @@ export async function handleAddTransaction(e) {
 export async function handleDeleteTransaction(id) {
     showLoading(true);
 
+    // First, get transaction to check if it's a debt
+    const tx = await transactions.getTransactionById(id);
+    if (!tx) {
+        showLoading(false);
+        return;
+    }
+
+    // For debt transactions, show cascade delete modal immediately
+    if (tx.is_debt || tx.type === 'debt_op') {
+        const relatedAccountId = tx.related_account_id || tx.from_account_id || tx.to_account_id;
+
+        document.getElementById('cascade-delete-message').innerHTML =
+            `Это долговая операция. Удалить все связанные транзакции и счёт?`;
+        document.getElementById('cascade-delete-tx-id').value = id;
+        document.getElementById('cascade-delete-account-id').value = relatedAccountId;
+
+        showLoading(false);
+        const { openModal } = await import('../modals.js');
+        openModal('modal-cascade-delete');
+        return;
+    }
+
+    // For regular transactions, try to delete directly
     const { error } = await transactions.deleteTransaction(id);
 
     if (error) {
         console.error('Delete transaction error:', error.message);
-
-        // Check for balance constraint error - offer cascade delete
-        if (error.message.includes('balance_check') || error.message.includes('constraint')) {
-            showLoading(false);
-
-            // Get transaction info to find related account
-            const tx = await transactions.getTransactionById(id);
-            if (!tx) return;
-
-            const relatedAccountId = tx.related_account_id || tx.from_account_id || tx.to_account_id;
-
-            // Count related transactions
-            const allTx = await transactions.getTransactions({ limit: 1000 });
-            const relatedTx = allTx.filter(t =>
-                t.related_account_id === relatedAccountId ||
-                t.from_account_id === relatedAccountId ||
-                t.to_account_id === relatedAccountId
-            );
-
-            // Show cascade delete modal
-            const modal = document.getElementById('modal-cascade-delete');
-            document.getElementById('cascade-delete-message').innerHTML =
-                `Найдено <strong>${relatedTx.length}</strong> связанных транзакций. Удалить все?`;
-            document.getElementById('cascade-delete-tx-id').value = id;
-            document.getElementById('cascade-delete-account-id').value = relatedAccountId;
-
-            const { openModal } = await import('../modals.js');
-            openModal('modal-cascade-delete');
-            return;
-        }
     } else {
-        // Reload accounts
         const updatedAccounts = await accounts.getAccounts({ includeHidden: true });
         setAccounts(updatedAccounts);
         await renderAll();
