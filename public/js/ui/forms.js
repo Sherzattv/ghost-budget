@@ -12,6 +12,7 @@
 export {
     handleAddTransaction,
     handleDeleteTransaction,
+    handleCascadeDelete,
     clearTransactionForm,
     updateTransactionForm,
     handleTransactionTypeChange,

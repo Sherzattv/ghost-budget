@@ -456,6 +456,27 @@
     </div>
   </div>
 
+  <!-- Modal: Cascade Delete Transaction -->
+  <div class="modal-overlay" id="modal-cascade-delete">
+    <div class="modal modal-sm">
+      <div class="modal-header">
+        <h3 class="modal-title">Удалить транзакцию?</h3>
+        <button class="modal-close" id="modal-cascade-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p id="cascade-delete-message" class="delete-warning">
+          Эта операция связана с другими транзакциями.
+        </p>
+        <input type="hidden" id="cascade-delete-tx-id">
+        <input type="hidden" id="cascade-delete-account-id">
+        <div class="modal-actions">
+          <button class="btn btn-ghost" id="btn-cascade-cancel">Отмена</button>
+          <button class="btn btn-danger" id="btn-cascade-confirm">🗑️ Удалить все связанные</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal: Edit Transaction -->
   <div class="modal-overlay" id="modal-edit-transaction">
     <div class="modal modal-sm">

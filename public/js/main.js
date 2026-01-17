@@ -21,7 +21,7 @@ import {
     updateTransferSelects
 } from './ui/components.js';
 import {
-    handleAddTransaction, handleDeleteTransaction,
+    handleAddTransaction, handleDeleteTransaction, handleCascadeDelete,
     handleAddAccount, handleDeleteAccount,
     handleModifyAccount, handleSaveAccountChanges,
     handleArchiveAccount, handleConfirmDelete,
@@ -388,6 +388,11 @@ function setupEventListeners() {
         const accountId = modal?.dataset.accountId;
         if (accountId) handleConfirmDelete(accountId);
     });
+
+    // Cascade delete modal
+    $('#modal-cascade-close')?.addEventListener('click', () => closeModal('modal-cascade-delete'));
+    $('#btn-cascade-cancel')?.addEventListener('click', () => closeModal('modal-cascade-delete'));
+    $('#btn-cascade-confirm')?.addEventListener('click', handleCascadeDelete);
 
     // Edit transaction modal
     $('#modal-edit-tx-close')?.addEventListener('click', handleCancelEdit);
