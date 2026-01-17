@@ -25,9 +25,8 @@ export {
     handleDebtActionClick,
     handleDebtTypeChange,
     handleCreditToggleClick,
-    updateDebtFormFields,
     resetDebtForm,
-    populateCounterpartySelect
+    updateBalanceHint
 } from './forms/debt-form.js';
 
 // Account form handlers

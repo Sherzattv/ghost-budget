@@ -18,6 +18,7 @@ import {
 
 // Import debt handler for delegation
 import { handleDebtOperation } from './debt-form.js';
+import { formController } from './form-controller.js';
 
 // ─── Transaction Form ───
 
@@ -233,47 +234,17 @@ export function clearTransactionForm() {
 /**
  * Update transaction form visibility based on type
  */
+/**
+ * Update transaction form visibility based on type
+ */
 export function updateTransactionForm() {
     const currentType = getTransactionType();
-    const isTransfer = currentType === 'transfer';
-    const isDebt = currentType === 'debt';
 
-    // Standard fields
-    $('#group-category').style.display = (isTransfer || isDebt) ? 'none' : 'block';
-    $('#group-account').style.display = (isTransfer || isDebt) ? 'none' : 'block';
-    $('#group-from-account').style.display = isTransfer ? 'block' : 'none';
-    $('#group-to-account').style.display = isTransfer ? 'block' : 'none';
+    // Delegate to FormController
+    // This handles visibility, labels, and populating selects
+    formController.setType(currentType);
 
-    // Split expense checkbox (only for expense)
-    $('#group-split-expense').style.display = currentType === 'expense' ? 'block' : 'none';
-    $('#group-split-details').style.display = 'none';
-    if ($('#input-split-expense')) $('#input-split-expense').checked = false;
-
-    // Debt fields - show action buttons only when on debt tab
-    $('#group-debt-action').style.display = isDebt ? 'block' : 'none';
-    $('#group-debt-account').style.display = 'none';
-    $('#group-debt-type').style.display = 'none';
-    $('#group-credit-toggle').style.display = 'none';
-    $('#group-counterparty').style.display = 'none';
-    $('#group-counterparty-select').style.display = 'none';
-    $('#group-close-debt').style.display = 'none';
-    $('#group-monthly-payment').style.display = 'none';
-    $('#group-payment-day').style.display = 'none';
-    $('#group-interest-rate').style.display = 'none';
-    $('#group-return-date').style.display = 'none';
-
-    // Clear debt balance hint
-    const hint = $('#hint-debt-balance');
-    if (hint) hint.textContent = '';
-
-    // Reset debt action selection
-    if (isDebt) {
-        // Import dynamically to avoid circular dependency
-        import('./debt-form.js').then(({ resetDebtForm }) => {
-            resetDebtForm();
-        });
-    }
-
+    // Keep legacy render calls that might not be in controller yet (or are shared)
     renderCategoriesList();
 }
 

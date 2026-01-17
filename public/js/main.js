@@ -21,13 +21,18 @@ import {
     updateTransferSelects
 } from './ui/components.js';
 import {
+    handleDebtTypeChange, handleCreditToggleClick
+} from './ui/forms/debt-form.js';
+import { formController } from './ui/forms/form-controller.js';
+import {
     handleAddTransaction, handleDeleteTransaction, handleCascadeDelete,
     handleAddAccount, handleDeleteAccount,
     handleModifyAccount, handleSaveAccountChanges,
     handleArchiveAccount, handleConfirmDelete,
     handleTransactionTypeChange, updateTransactionForm,
-    handleDebtActionClick, handleDebtTypeChange, handleCreditToggleClick,
-    handleEditTransaction, handleSaveTransactionEdit, handleCancelEdit
+    handleDebtActionClick,
+    handleEditTransaction, handleSaveTransactionEdit, handleCancelEdit,
+    updateBalanceHint
 } from './ui/forms.js';
 import {
     openModal, closeModal,
@@ -207,38 +212,58 @@ function setupEventListeners() {
             handleTransactionTypeChange(tab.dataset.type);
         });
     });
+    // ─── Transaction Form Interactions ───
 
-    // Transaction form
-    $('#transaction-form')?.addEventListener('submit', handleAddTransaction);
+    // Dynamic field updates via FormController
+    $('#input-amount')?.addEventListener('input', () => {
+        formController.renderDynamicFields();
+        updateBalanceHint();
+    });
 
-    // Transfer account mutual exclusion
-    $('#input-from-account')?.addEventListener('change', updateTransferSelects);
+    $('#input-counterparty-select')?.addEventListener('change', () => {
+        formController.renderDynamicFields();
+        updateBalanceHint();
+    });
 
-    // Split expense checkbox toggle
     $('#input-split-expense')?.addEventListener('change', (e) => {
-        $('#group-split-details').style.display = e.target.checked ? 'block' : 'none';
+        formController.toggleSplit(e.target.checked);
     });
 
-    // Debt action buttons (event delegation)
-    document.querySelector('.debt-action-buttons')?.addEventListener('click', (e) => {
-        const btn = e.target.closest('.debt-action-btn');
-        if (btn) {
-            handleDebtActionClick(btn.dataset.action);
-        }
+    // Transaction type tabs
+    document.querySelectorAll('.tab').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const type = e.target.dataset.type;
+            handleTransactionTypeChange(type);
+        });
     });
 
-    // Debt type radio change
+    // Account selection
+    $('#input-account')?.addEventListener('change', updateAccountSelection);
+
+    // Debt actions
+    document.querySelectorAll('.debt-action-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            // Find button if icon/text clicked
+            const target = e.target.closest('.debt-action-btn');
+            if (target) handleDebtActionClick(target.dataset.action);
+        });
+    });
+
+    // Debt type (person/credit)
     document.querySelectorAll('input[name="debt-type"]').forEach(radio => {
         radio.addEventListener('change', handleDebtTypeChange);
     });
 
-    // Credit/Installment toggle (event delegation)
-    document.querySelector('.toggle-group')?.addEventListener('click', (e) => {
-        const btn = e.target.closest('.toggle-btn');
-        if (btn) {
-            handleCreditToggleClick(btn.dataset.creditType);
-        }
+    // Credit/Installment toggle
+    document.querySelectorAll('.toggle-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            handleCreditToggleClick(e.target.dataset.creditType);
+        });
     });
+
+    // Transaction form submit
+    $('#transaction-form')?.addEventListener('submit', handleAddTransaction);
 
     // Transaction actions (event delegation)
     $('#transactions')?.addEventListener('click', (e) => {
