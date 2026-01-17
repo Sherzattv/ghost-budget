@@ -782,9 +782,8 @@ body {
   flex-direction: column;
   gap: var(--spacing-sm);
   max-height: 300px;
-  overflow: visible;
-  /* Allow dropdown to overflow */
-  padding-bottom: var(--spacing-lg);
+  overflow-y: auto;
+  padding-bottom: var(--spacing-sm);
   min-height: 60px;
 }
 
