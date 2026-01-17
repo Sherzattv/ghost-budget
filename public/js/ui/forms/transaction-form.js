@@ -249,15 +249,22 @@ export function updateTransactionForm() {
     $('#group-split-details').style.display = 'none';
     if ($('#input-split-expense')) $('#input-split-expense').checked = false;
 
-    // Debt fields - show action buttons only
+    // Debt fields - show action buttons only when on debt tab
     $('#group-debt-action').style.display = isDebt ? 'block' : 'none';
+    $('#group-debt-account').style.display = 'none';
     $('#group-debt-type').style.display = 'none';
     $('#group-credit-toggle').style.display = 'none';
     $('#group-counterparty').style.display = 'none';
+    $('#group-counterparty-select').style.display = 'none';
+    $('#group-close-debt').style.display = 'none';
     $('#group-monthly-payment').style.display = 'none';
     $('#group-payment-day').style.display = 'none';
     $('#group-interest-rate').style.display = 'none';
     $('#group-return-date').style.display = 'none';
+
+    // Clear debt balance hint
+    const hint = $('#hint-debt-balance');
+    if (hint) hint.textContent = '';
 
     // Reset debt action selection
     if (isDebt) {
