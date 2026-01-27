@@ -7,6 +7,11 @@ from bot.utils.callback_data import (
     CategorySelectionCallback,
     AccountSelectionCallback,
     ActionCallback,
+    TransferSourceCallback,
+    TransferDestinationCallback,
+    DebtTypeCallback,
+    DebtSourceCallback,
+    DebtCounterpartyCallback,
 )
 
 
@@ -208,3 +213,236 @@ def build_confirmation_keyboard(
     ]
     
     return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+def build_transfer_source_keyboard(
+    accounts: List[Dict[str, Any]],
+    amount: int,
+    msg_id: int
+) -> InlineKeyboardMarkup:
+    """Build keyboard for transfer source account selection."""
+    
+    buttons = []
+    
+    for acc in accounts:
+        icon = acc.get("icon", "💳")
+        name = acc.get("name", "Счёт")
+        acc_id = acc.get("id", "")
+        balance = acc.get("balance", 0) or 0
+        balance_formatted = f"{balance:,}".replace(",", " ")
+        
+        button = InlineKeyboardButton(
+            text=f"{icon} {name} ({balance_formatted} ₸)",
+            callback_data=TransferSourceCallback(
+                amount=amount,
+                source_id=acc_id,
+                msg_id=msg_id
+            ).pack()
+        )
+        buttons.append([button])
+    
+    # Back button
+    buttons.append([
+        InlineKeyboardButton(
+            text="◀️ Назад",
+            callback_data=ActionCallback(
+                action="back_to_type",
+                amount=amount,
+                msg_id=msg_id
+            ).pack()
+        )
+    ])
+    
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+def build_transfer_dest_keyboard(
+    accounts: List[Dict[str, Any]],
+    amount: int,
+    source_id: str,
+    msg_id: int
+) -> InlineKeyboardMarkup:
+    """Build keyboard for transfer destination account selection (excludes source)."""
+    
+    buttons = []
+    
+    for acc in accounts:
+        acc_id = acc.get("id", "")
+        # Skip source account
+        if acc_id == source_id:
+            continue
+            
+        icon = acc.get("icon", "💳")
+        name = acc.get("name", "Счёт")
+        balance = acc.get("balance", 0) or 0
+        balance_formatted = f"{balance:,}".replace(",", " ")
+        
+        button = InlineKeyboardButton(
+            text=f"{icon} {name} ({balance_formatted} ₸)",
+            callback_data=TransferDestinationCallback(
+                amount=amount,
+                source_id=source_id,
+                dest_id=acc_id,
+                msg_id=msg_id
+            ).pack()
+        )
+        buttons.append([button])
+    
+    # Back button - go back to source selection
+    buttons.append([
+        InlineKeyboardButton(
+            text="◀️ Назад",
+            callback_data=ActionCallback(
+                action="back_to_transfer_source",
+                amount=amount,
+                msg_id=msg_id
+            ).pack()
+        )
+    ])
+    
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+# ==================== Debt Keyboards ====================
+
+def build_debt_type_keyboard(amount: int, msg_id: int) -> InlineKeyboardMarkup:
+    """Build keyboard for debt type selection (lent/borrowed)."""
+    
+    buttons = [
+        [
+            InlineKeyboardButton(
+                text="📤 Дал в долг",
+                callback_data=DebtTypeCallback(
+                    amount=amount,
+                    debt_type="lent",
+                    msg_id=msg_id
+                ).pack()
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                text="📥 Взял в долг",
+                callback_data=DebtTypeCallback(
+                    amount=amount,
+                    debt_type="borrowed",
+                    msg_id=msg_id
+                ).pack()
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                text="◀️ Назад",
+                callback_data=ActionCallback(
+                    action="back_to_type",
+                    amount=amount,
+                    msg_id=msg_id
+                ).pack()
+            )
+        ]
+    ]
+    
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+def build_debt_source_keyboard(
+    accounts: List[Dict[str, Any]],
+    amount: int,
+    debt_type: str,
+    msg_id: int
+) -> InlineKeyboardMarkup:
+    """Build keyboard for source account selection in debt flow."""
+    
+    buttons = []
+    
+    for acc in accounts:
+        icon = acc.get("icon", "💳")
+        name = acc.get("name", "Счёт")
+        acc_id = acc.get("id", "")
+        balance = acc.get("balance", 0) or 0
+        balance_formatted = f"{balance:,}".replace(",", " ")
+        
+        button = InlineKeyboardButton(
+            text=f"{icon} {name} ({balance_formatted} ₸)",
+            callback_data=DebtSourceCallback(
+                amount=amount,
+                debt_type=debt_type,
+                source_id=acc_id,
+                msg_id=msg_id
+            ).pack()
+        )
+        buttons.append([button])
+    
+    # Back button
+    buttons.append([
+        InlineKeyboardButton(
+            text="◀️ Назад",
+            callback_data=ActionCallback(
+                action="back_to_debt_type",
+                amount=amount,
+                msg_id=msg_id
+            ).pack()
+        )
+    ])
+    
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+def build_debt_counterparty_keyboard(
+    counterparties: List[Dict[str, Any]],
+    amount: int,
+    debt_type: str,
+    source_id: str,
+    msg_id: int
+) -> InlineKeyboardMarkup:
+    """Build keyboard for counterparty (debtor/creditor) selection."""
+    
+    buttons = []
+    
+    for acc in counterparties:
+        icon = acc.get("icon", "👤")
+        name = acc.get("name", "Человек")
+        acc_id = acc.get("id", "")
+        balance = acc.get("balance", 0) or 0
+        balance_formatted = f"{balance:,}".replace(",", " ")
+        
+        button = InlineKeyboardButton(
+            text=f"{icon} {name} ({balance_formatted} ₸)",
+            callback_data=DebtCounterpartyCallback(
+                amount=amount,
+                debt_type=debt_type,
+                source_id=source_id,
+                counterparty_id=acc_id,
+                msg_id=msg_id
+            ).pack()
+        )
+        buttons.append([button])
+    
+    # Add new counterparty button
+    buttons.append([
+        InlineKeyboardButton(
+            text="➕ Новый человек",
+            callback_data=ActionCallback(
+                action="new_counterparty",
+                amount=amount,
+                type_code=f"debt_{debt_type}_{source_id}",  # encode for later
+                msg_id=msg_id
+            ).pack()
+        )
+    ])
+    
+    # Back button
+    buttons.append([
+        InlineKeyboardButton(
+            text="◀️ Назад",
+            callback_data=ActionCallback(
+                action="back_to_debt_source",
+                amount=amount,
+                type_code=debt_type,
+                msg_id=msg_id
+            ).pack()
+        )
+    ])
+    
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+

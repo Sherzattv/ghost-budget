@@ -48,3 +48,28 @@ class ActionCallback(CallbackData, prefix="act"):
     msg_id: int = 0
     amount: int = 0
     type_code: Optional[str] = None
+
+
+class DebtTypeCallback(CallbackData, prefix="debt_type"):
+    """Callback for debt type selection (lent/borrowed)."""
+    amount: int
+    debt_type: str  # lent = дал в долг, borrowed = взял в долг
+    msg_id: int
+
+
+class DebtSourceCallback(CallbackData, prefix="debt_src"):
+    """Callback for source account selection in debt flow."""
+    amount: int
+    debt_type: str
+    source_id: str
+    msg_id: int
+
+
+class DebtCounterpartyCallback(CallbackData, prefix="debt_cp"):
+    """Callback for counterparty (debtor/creditor) selection."""
+    amount: int
+    debt_type: str
+    source_id: str
+    counterparty_id: str  # account ID of the receivable/liability
+    msg_id: int
+

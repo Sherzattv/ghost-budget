@@ -257,6 +257,124 @@ async def get_account_by_id(account_id: str) -> Optional[Dict[str, Any]]:
     return None
 
 
+# ==================== Debt Accounts ====================
+
+async def get_debt_accounts(telegram_id: int, debt_type: str) -> List[Dict[str, Any]]:
+    """Get debt accounts (receivable for lent, liability for borrowed)."""
+    client = get_client()
+    user_id = await get_user_id_by_telegram(telegram_id)
+    
+    if not user_id:
+        return []
+    
+    # lent = someone owes me = receivable
+    # borrowed = I owe someone = liability
+    account_type = "receivable" if debt_type == "lent" else "liability"
+    
+    try:
+        response = client.table("accounts").select("*").eq("user_id", user_id).eq("type", account_type).eq("is_hidden", False).order("name").execute()
+        return response.data or []
+    except Exception as e:
+        logger.error(f"Error getting debt accounts: {e}")
+    
+    return []
+
+
+async def create_debt_account(telegram_id: int, name: str, debt_type: str) -> Optional[Dict[str, Any]]:
+    """Create a new debt account (receivable or liability)."""
+    client = get_client()
+    user_id = await get_user_id_by_telegram(telegram_id)
+    
+    if not user_id:
+        return None
+    
+    # lent = receivable (they owe me), borrowed = liability (I owe them)
+    account_type = "receivable" if debt_type == "lent" else "liability"
+    icon = "📥" if debt_type == "lent" else "📤"
+    
+    try:
+        new_account = {
+            "id": str(uuid.uuid4()),
+            "user_id": user_id,
+            "name": name,
+            "type": account_type,
+            "icon": icon,
+            "balance": 0,
+            "is_hidden": False,
+            "sort_order": 99
+        }
+        
+        response = client.table("accounts").insert(new_account).execute()
+        if response.data:
+            return response.data[0]
+    except Exception as e:
+        logger.error(f"Error creating debt account: {e}")
+    
+    return None
+
+
+async def create_debt_transaction(
+    telegram_id: int,
+    debt_type: str,
+    amount: int,
+    source_account_id: str,
+    counterparty_account_id: str
+) -> Optional[Dict[str, Any]]:
+    """Create a debt transaction.
+    
+    For 'lent' (дал в долг):
+      - source_account loses money (e.g., Kaspi -20000)
+      - counterparty_account (receivable) gains +20000 (they owe me)
+    
+    For 'borrowed' (взял в долг):
+      - source_account gains money (e.g., Kaspi +20000)
+      - counterparty_account (liability) gains +20000 (I owe them, negative conceptually)
+    """
+    client = get_client()
+    user_id = await get_user_id_by_telegram(telegram_id)
+    
+    if not user_id:
+        return None
+    
+    from datetime import date
+    
+    transaction = {
+        "user_id": user_id,
+        "date": date.today().isoformat(),
+        "type": "transfer",
+        "amount": amount,
+        "is_debt": True,
+        "debt_direction": debt_type
+    }
+    
+    if debt_type == "lent":
+        # Money goes FROM source TO receivable
+        transaction["from_account_id"] = source_account_id
+        transaction["to_account_id"] = counterparty_account_id
+    else:
+        # Money goes FROM liability TO source
+        transaction["from_account_id"] = counterparty_account_id
+        transaction["to_account_id"] = source_account_id
+    
+    try:
+        response = client.table("transactions").insert(transaction).execute()
+        
+        if response.data:
+            # Update balances
+            if debt_type == "lent":
+                await update_account_balance(source_account_id, -amount)
+                await update_account_balance(counterparty_account_id, amount)
+            else:
+                await update_account_balance(source_account_id, amount)
+                await update_account_balance(counterparty_account_id, amount)  # liability grows positive
+            
+            return response.data[0]
+    except Exception as e:
+        logger.error(f"Error creating debt transaction: {e}")
+    
+    return None
+
+
 # ==================== Categories ====================
 
 async def get_categories(telegram_id: int, cat_type: str, frequent_only: bool = False) -> List[Dict[str, Any]]:

@@ -62,7 +62,7 @@ async def main():
     dp.include_router(callbacks.router)
     dp.include_router(balance.router)
     
-    # Set bot commands for menu
+    # Set bot commands for menu (with timeout)
     commands = [
         BotCommand(command="start", description="🏠 Главное меню"),
         BotCommand(command="balance", description="💰 Мои балансы"),
@@ -70,8 +70,10 @@ async def main():
         BotCommand(command="help", description="❓ Справка"),
     ]
     try:
-        await bot.set_my_commands(commands)
+        await asyncio.wait_for(bot.set_my_commands(commands), timeout=5.0)
         logger.info("Bot commands set")
+    except asyncio.TimeoutError:
+        logger.warning("Timeout setting commands, skipping")
     except Exception as e:
         logger.warning(f"Failed to set commands: {e}")
     

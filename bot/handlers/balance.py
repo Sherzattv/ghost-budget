@@ -2,10 +2,24 @@
 from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
+from aiogram.utils.formatting import (
+    as_list,
+    Bold,
+    Text,
+)
 
 from bot.database.supabase import get_accounts_with_balance
 
 router = Router()
+
+# Markers
+ITEM_MARKER = "○ "
+DIVIDER = "─────────"
+
+
+def format_amount(amount: float) -> str:
+    """Format amount with spaces as thousand separator."""
+    return f"{amount:,.0f}".replace(",", " ") + " ₸"
 
 
 @router.message(Command("balance"))
@@ -30,78 +44,142 @@ async def cmd_balance(message: Message):
     receivables = [a for a in accounts if a.get("type") == "receivable"]
     liabilities = [a for a in accounts if a.get("type") == "liability"]
     
-    text = "💰 <b>Ваши балансы</b>\n\n"
+    # Split assets into real money and credit cards
+    real_money = [a for a in assets if not a.get("credit_limit")]
+    credit_cards = [a for a in assets if a.get("credit_limit")]
     
-    total_available = 0
+    sections = []
+    
+    total_real_money = 0
     total_savings = 0
     total_owed_to_me = 0
     total_i_owe = 0
+    total_credit_available = 0
+    total_credit_limit = 0
     
-    if assets:
-        text += "💳 <b>Счета:</b>\n"
-        for acc in assets:
-            balance = acc.get("balance", 0)
-            total_available += balance
-            icon = acc.get("icon", "💳")
+    # === Real Money Section ===
+    if real_money:
+        items = []
+        for acc in real_money:
+            balance = float(acc.get("balance", 0) or 0)
+            total_real_money += balance
             name = acc.get("name", "Счёт")
-            formatted = f"{balance:,.0f}".replace(",", " ")
-            text += f"  {icon} {name}: <b>{formatted} ₸</b>\n"
-        text += "\n"
+            items.append(Text(f"{ITEM_MARKER}{name}: {format_amount(balance)}"))
+        
+        items.append(Text(DIVIDER))
+        items.append(Text(f"Итого: {format_amount(total_real_money)}"))
+        
+        sections.append(as_list(
+            Bold("💵 Мои деньги:"),
+            *items,
+            sep="\n",
+        ))
     
+    # === Credit Cards Section ===
+    if credit_cards:
+        items = []
+        for acc in credit_cards:
+            available = float(acc.get("balance", 0) or 0)
+            limit = float(acc.get("credit_limit", 0) or 0)
+            total_credit_available += available
+            total_credit_limit += limit
+            name = acc.get("name", "Карта")
+            items.append(Text(f"{ITEM_MARKER}{name}: {format_amount(available)} / {format_amount(limit)}"))
+        
+        used = total_credit_limit - total_credit_available
+        items.append(Text(DIVIDER))
+        items.append(Text(f"Использовано: {format_amount(used)}"))
+        items.append(Text(f"Доступно: {format_amount(total_credit_available)}"))
+        
+        sections.append(as_list(
+            Bold("💳 Кредитные карты:"),
+            *items,
+            sep="\n",
+        ))
+    
+    # === Savings Section ===
     if savings:
-        text += "🏦 <b>Накопления:</b>\n"
+        items = []
         for acc in savings:
-            balance = acc.get("balance", 0)
+            balance = float(acc.get("balance", 0) or 0)
             total_savings += balance
-            icon = acc.get("icon", "🏧")
             name = acc.get("name", "Накопления")
-            formatted = f"{balance:,.0f}".replace(",", " ")
-            text += f"  {icon} {name}: <b>{formatted} ₸</b>\n"
-        text += "\n"
+            items.append(Text(f"{ITEM_MARKER}{name}: {format_amount(balance)}"))
+        
+        items.append(Text(DIVIDER))
+        items.append(Text(f"Итого: {format_amount(total_savings)}"))
+        
+        sections.append(as_list(
+            Bold("🏦 Накопления:"),
+            *items,
+            sep="\n",
+        ))
     
-    if receivables:
-        text += "📥 <b>Мне должны:</b>\n"
-        for acc in receivables:
-            balance = acc.get("balance", 0)
+    # === Receivables Section ===
+    receivable_items = []
+    for acc in receivables:
+        balance = float(acc.get("balance", 0) or 0)
+        if balance > 0:
             total_owed_to_me += balance
-            icon = acc.get("icon", "👤")
             name = acc.get("name", "Должник")
-            formatted = f"{balance:,.0f}".replace(",", " ")
-            text += f"  {icon} {name}: <b>{formatted} ₸</b>\n"
-        text += "\n"
+            receivable_items.append(Text(f"{ITEM_MARKER}{name}: {format_amount(balance)}"))
     
+    if receivable_items:
+        receivable_items.append(Text(DIVIDER))
+        receivable_items.append(Text(f"Итого: {format_amount(total_owed_to_me)}"))
+        
+        sections.append(as_list(
+            Bold("📥 Мне должны:"),
+            *receivable_items,
+            sep="\n",
+        ))
+    
+    # === Liabilities Section ===
     if liabilities:
-        text += "📤 <b>Я должен:</b>\n"
+        items = []
         for acc in liabilities:
-            balance = acc.get("balance", 0)
-            total_i_owe += abs(balance)
-            icon = acc.get("icon", "🏛")
-            name = acc.get("name", "Кредит")
-            formatted = f"{abs(balance):,.0f}".replace(",", " ")
-            text += f"  {icon} {name}: <b>-{formatted} ₸</b>\n"
-        text += "\n"
+            balance = float(acc.get("balance", 0) or 0)
+            debt = abs(balance)
+            total_i_owe += debt
+            name = acc.get("name", "Долг")
+            items.append(Text(f"{ITEM_MARKER}{name}: {format_amount(debt)}"))
+        
+        items.append(Text(DIVIDER))
+        items.append(Text(f"Итого: {format_amount(total_i_owe)}"))
+        
+        sections.append(as_list(
+            Bold("📤 Я должен:"),
+            *items,
+            sep="\n",
+        ))
     
-    # Summary
-    text += "━━━━━━━━━━━━━━━━━━\n"
-    
-    available_formatted = f"{total_available:,.0f}".replace(",", " ")
-    text += f"💵 Доступно: <b>{available_formatted} ₸</b>\n"
+    # === Summary Section ===
+    summary_items = [
+        Text(f"Свои деньги: {format_amount(total_real_money)}"),
+    ]
     
     if total_savings > 0:
-        savings_formatted = f"{total_savings:,.0f}".replace(",", " ")
-        text += f"🏦 Накоплено: <b>{savings_formatted} ₸</b>\n"
+        summary_items.append(Text(f"Накоплено: {format_amount(total_savings)}"))
     
-    if total_owed_to_me > 0:
-        owed_formatted = f"{total_owed_to_me:,.0f}".replace(",", " ")
-        text += f"📥 Мне должны: <b>{owed_formatted} ₸</b>\n"
+    if total_credit_available > 0:
+        summary_items.append(Text(f"Кредит доступен: {format_amount(total_credit_available)}"))
     
-    if total_i_owe > 0:
-        i_owe_formatted = f"{total_i_owe:,.0f}".replace(",", " ")
-        text += f"📤 Я должен: <b>-{i_owe_formatted} ₸</b>\n"
-    
-    net_worth = total_available + total_savings + total_owed_to_me - total_i_owe
-    net_formatted = f"{net_worth:,.0f}".replace(",", " ")
+    # Net worth = real money + savings + owed to me - i owe
+    net_worth = total_real_money + total_savings + total_owed_to_me - total_i_owe
     sign = "+" if net_worth >= 0 else ""
-    text += f"\n💎 Чистый капитал: <b>{sign}{net_formatted} ₸</b>"
+    summary_items.append(Text(f"Чистый капитал: {sign}{format_amount(net_worth)}"))
     
-    await message.answer(text)
+    sections.append(as_list(
+        Bold("━━━━━━━━━━"),
+        *summary_items,
+        sep="\n",
+    ))
+    
+    # Build final content
+    content = as_list(
+        Bold("💰 Баланс"),
+        *sections,
+        sep="\n\n",
+    )
+    
+    await message.answer(**content.as_kwargs())
