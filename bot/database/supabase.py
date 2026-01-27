@@ -236,6 +236,20 @@ async def get_accounts_with_balance(telegram_id: int) -> List[Dict[str, Any]]:
     return await get_accounts(telegram_id)
 
 
+async def get_account_by_id(account_id: str) -> Optional[Dict[str, Any]]:
+    """Get single account by ID with current balance."""
+    client = get_client()
+    
+    try:
+        response = client.table("accounts").select("*").eq("id", account_id).execute()
+        if response.data:
+            return response.data[0]
+    except Exception as e:
+        logger.error(f"Error getting account by id: {e}")
+    
+    return None
+
+
 # ==================== Categories ====================
 
 async def get_categories(telegram_id: int, cat_type: str, frequent_only: bool = False) -> List[Dict[str, Any]]:

@@ -1,7 +1,13 @@
 """Inline keyboard builders."""
-import json
 from typing import List, Dict, Any, Optional
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+
+from bot.utils.callback_data import (
+    TypeSelectionCallback,
+    CategorySelectionCallback,
+    AccountSelectionCallback,
+    ActionCallback,
+)
 
 
 def build_type_keyboard(amount: int, msg_id: int) -> InlineKeyboardMarkup:
@@ -12,29 +18,37 @@ def build_type_keyboard(amount: int, msg_id: int) -> InlineKeyboardMarkup:
         [
             InlineKeyboardButton(
                 text="📉 Расход",
-                callback_data=json.dumps({"a": amount, "t": "exp", "m": msg_id})
+                callback_data=TypeSelectionCallback(
+                    amount=amount, type_code="exp", msg_id=msg_id
+                ).pack()
             ),
             InlineKeyboardButton(
                 text="📈 Доход", 
-                callback_data=json.dumps({"a": amount, "t": "inc", "m": msg_id})
+                callback_data=TypeSelectionCallback(
+                    amount=amount, type_code="inc", msg_id=msg_id
+                ).pack()
             )
         ],
         # Row 2
         [
             InlineKeyboardButton(
                 text="🔄 Перевод",
-                callback_data=json.dumps({"a": amount, "t": "trf", "m": msg_id})
+                callback_data=TypeSelectionCallback(
+                    amount=amount, type_code="trf", msg_id=msg_id
+                ).pack()
             ),
             InlineKeyboardButton(
                 text="🤝 Долги",
-                callback_data=json.dumps({"a": amount, "t": "debt", "m": msg_id})
+                callback_data=TypeSelectionCallback(
+                    amount=amount, type_code="debt", msg_id=msg_id
+                ).pack()
             )
         ],
         # Row 3 - Cancel
         [
             InlineKeyboardButton(
                 text="❌ Отмена",
-                callback_data=json.dumps({"action": "cancel", "m": msg_id})
+                callback_data=ActionCallback(action="cancel", msg_id=msg_id).pack()
             )
         ]
     ]
@@ -60,13 +74,12 @@ def build_category_keyboard(
         
         button = InlineKeyboardButton(
             text=f"{icon} {name}",
-            callback_data=json.dumps({
-                "a": amount,
-                "t": type_code,
-                "c": cat_id,
-                "cn": name[:10],  # truncate for 64 byte limit
-                "m": msg_id
-            })
+            callback_data=CategorySelectionCallback(
+                amount=amount,
+                type_code=type_code,
+                category_id=cat_id,
+                msg_id=msg_id
+            ).pack()
         )
         row.append(button)
         
@@ -83,12 +96,12 @@ def build_category_keyboard(
     buttons.append([
         InlineKeyboardButton(
             text="✍️ Другое",
-            callback_data=json.dumps({
-                "a": amount,
-                "t": type_code,
-                "action": "custom_cat",
-                "m": msg_id
-            })
+            callback_data=ActionCallback(
+                action="custom_cat",
+                amount=amount,
+                type_code=type_code,
+                msg_id=msg_id
+            ).pack()
         )
     ])
     
@@ -96,7 +109,11 @@ def build_category_keyboard(
     buttons.append([
         InlineKeyboardButton(
             text="◀️ Назад",
-            callback_data=json.dumps({"a": amount, "m": msg_id})
+            callback_data=ActionCallback(
+                action="back_to_type",
+                amount=amount,
+                msg_id=msg_id
+            ).pack()
         )
     ])
     
@@ -121,36 +138,39 @@ def build_account_keyboard(
         name = acc.get("name", "Счёт")
         acc_id = acc.get("id", "")
         
-        callback_data = {
-            "a": amount,
-            "t": type_code,
-            "s": acc_id,
-            "an": name[:10],
-            "m": msg_id,
-            "f": True  # finalize flag
-        }
-        
-        if category_id:
-            callback_data["c"] = category_id
-        if category_name:
-            callback_data["cn"] = category_name[:10]
-        
         button = InlineKeyboardButton(
             text=f"{icon} {name}",
-            callback_data=json.dumps(callback_data)
+            callback_data=AccountSelectionCallback(
+                amount=amount,
+                type_code=type_code,
+                category_id=category_id,
+                account_id=acc_id,
+                msg_id=msg_id
+            ).pack()
         )
         buttons.append([button])
     
     # Back button
-    back_data = {"a": amount, "t": type_code, "m": msg_id}
-    if not category_id:
+    if category_id:
+        # Go back to category selection
+        back_callback = ActionCallback(
+            action="back_to_category",
+            amount=amount,
+            type_code=type_code,
+            msg_id=msg_id
+        )
+    else:
         # Go back to type selection
-        back_data = {"a": amount, "m": msg_id}
+        back_callback = ActionCallback(
+            action="back_to_type",
+            amount=amount,
+            msg_id=msg_id
+        )
     
     buttons.append([
         InlineKeyboardButton(
             text="◀️ Назад",
-            callback_data=json.dumps(back_data)
+            callback_data=back_callback.pack()
         )
     ])
     
@@ -170,20 +190,19 @@ def build_confirmation_keyboard(
         [
             InlineKeyboardButton(
                 text="✅ Подтвердить",
-                callback_data=json.dumps({
-                    "a": amount,
-                    "t": type_code,
-                    "c": category_id,
-                    "s": account_id,
-                    "m": msg_id,
-                    "f": True
-                })
+                callback_data=AccountSelectionCallback(
+                    amount=amount,
+                    type_code=type_code,
+                    category_id=category_id,
+                    account_id=account_id,
+                    msg_id=msg_id
+                ).pack()
             )
         ],
         [
             InlineKeyboardButton(
                 text="❌ Отмена",
-                callback_data=json.dumps({"action": "cancel", "m": msg_id})
+                callback_data=ActionCallback(action="cancel", msg_id=msg_id).pack()
             )
         ]
     ]

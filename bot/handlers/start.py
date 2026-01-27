@@ -1,5 +1,4 @@
 """Start and help command handlers."""
-import json
 from aiogram import Router, F
 from aiogram.filters import CommandStart, Command
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
@@ -10,6 +9,9 @@ from bot.database.supabase import (
     reset_user_data,
     delete_profile,
 )
+from bot.utils.callback_data import ActionCallback
+from bot.handlers.onboarding import start_onboarding
+
 
 router = Router()
 
@@ -34,12 +36,11 @@ async def cmd_start(message: Message):
         # No profile - create new one
         new_user = await create_new_profile_with_telegram(telegram_id, display_name)
         if new_user:
-            await message.answer(
-                f"✅ Добро пожаловать, <b>{display_name}</b>!\n\n"
-                "Я создал тебе профиль со стандартными счетами и категориями.\n"
-                "Настрой их под себя в /accounts и /categories."
-            )
-        await show_welcome(message, user.first_name)
+            # Start interactive onboarding for new users
+            await start_onboarding(message)
+        else:
+            # Fallback if profile creation failed
+            await show_welcome(message, user.first_name)
 
 
 async def show_welcome(message: Message, first_name: str):
@@ -65,19 +66,19 @@ async def show_welcome_with_options(message: Message, first_name: str):
         [
             InlineKeyboardButton(
                 text="🔄 Очистить все данные",
-                callback_data=json.dumps({"action": "reset_data"})
+                callback_data=ActionCallback(action="reset_data").pack()
             )
         ],
         [
             InlineKeyboardButton(
                 text="🗑 Удалить профиль и создать новый",
-                callback_data=json.dumps({"action": "delete_profile"})
+                callback_data=ActionCallback(action="delete_profile").pack()
             )
         ],
         [
             InlineKeyboardButton(
                 text="✅ Всё ок, продолжаю",
-                callback_data=json.dumps({"action": "continue"})
+                callback_data=ActionCallback(action="continue").pack()
             )
         ]
     ]
@@ -94,8 +95,8 @@ async def show_welcome_with_options(message: Message, first_name: str):
     await message.answer(welcome_text, reply_markup=keyboard)
 
 
-@router.callback_query(F.data.contains("reset_data"))
-async def handle_reset_data(callback: CallbackQuery):
+@router.callback_query(ActionCallback.filter(F.action == "reset_data"))
+async def handle_reset_data(callback: CallbackQuery, callback_data: ActionCallback):
     """Handle reset data - clear transactions but keep accounts/categories."""
     if not callback.from_user:
         return
@@ -116,8 +117,8 @@ async def handle_reset_data(callback: CallbackQuery):
     await callback.answer()
 
 
-@router.callback_query(F.data.contains("delete_profile"))
-async def handle_delete_profile(callback: CallbackQuery):
+@router.callback_query(ActionCallback.filter(F.action == "delete_profile"))
+async def handle_delete_profile(callback: CallbackQuery, callback_data: ActionCallback):
     """Handle delete profile - remove everything and create fresh."""
     if not callback.from_user:
         return
@@ -144,8 +145,8 @@ async def handle_delete_profile(callback: CallbackQuery):
     await callback.answer()
 
 
-@router.callback_query(F.data.contains("continue"))
-async def handle_continue(callback: CallbackQuery):
+@router.callback_query(ActionCallback.filter(F.action == "continue"))
+async def handle_continue(callback: CallbackQuery, callback_data: ActionCallback):
     """Handle continue - just close the menu."""
     await callback.message.edit_text(
         "✅ Отлично! Просто отправь сумму чтобы добавить транзакцию. 💰"
