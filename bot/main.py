@@ -69,8 +69,11 @@ async def main():
         BotCommand(command="stats", description="📊 Статистика"),
         BotCommand(command="help", description="❓ Справка"),
     ]
-    await bot.set_my_commands(commands)
-    logger.info("Bot commands set")
+    try:
+        await bot.set_my_commands(commands)
+        logger.info("Bot commands set")
+    except Exception as e:
+        logger.warning(f"Failed to set commands: {e}")
     
     logger.info("Bot starting...")
     

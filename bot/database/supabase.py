@@ -1,4 +1,5 @@
 """Supabase client and database operations."""
+import uuid
 from typing import List, Dict, Any, Optional
 from datetime import date
 
@@ -34,9 +35,14 @@ async def get_user_by_telegram_id(telegram_id: int) -> Optional[Dict[str, Any]]:
     client = get_client()
     
     try:
+        logger.info(f"Looking up user with telegram_id: {telegram_id}")
         response = client.table("profiles").select("*").eq("telegram_id", telegram_id).execute()
+        logger.info(f"Response data: {response.data}")
         if response.data:
+            logger.info(f"Found user: {response.data[0]}")
             return response.data[0]
+        else:
+            logger.warning(f"No user found for telegram_id: {telegram_id}")
     except Exception as e:
         logger.error(f"Error getting user by telegram: {e}")
     
@@ -78,6 +84,7 @@ async def create_new_profile_with_telegram(telegram_id: int, display_name: str) 
     
     try:
         new_user = {
+            "id": str(uuid.uuid4()),
             "telegram_id": telegram_id,
             "display_name": display_name,
             "settings": {"currency": "KZT", "timezone": "Asia/Almaty"}
